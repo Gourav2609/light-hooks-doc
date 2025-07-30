@@ -1,0 +1,105 @@
+---
+title: Hooks
+description: Complete reference for all hooks available in light-hooks package.
+---
+
+Light Hooks provides a collection of powerful, lightweight React hooks designed to solve common patterns in modern React applications. Each hook is carefully crafted to be performant, type-safe, and easy to use.
+
+## Available Hooks
+
+### State Management
+- **[useCountdown](/docs/getting-started/hooks/use-countdown)** - Timer management with start/pause/reset controls
+
+### UI & Interaction
+- **[useClickOutside](/docs/getting-started/hooks/use-click-outside)** - Detect clicks outside specific elements
+- **[isMobile](/docs/getting-started/hooks/is-mobile)** - Device detection for responsive behavior
+
+### Network & Communication
+- **[usePing](/docs/getting-started/hooks/use-ping)** - Network connectivity and latency monitoring
+
+## Getting Started
+
+All hooks can be imported individually from the light-hooks package:
+
+```tsx
+import { useCountdown, useClickOutside, isMobile, usePing } from 'light-hooks';
+```
+
+## Common Patterns
+
+### Timer with User Controls
+```tsx
+function Timer() {
+  const [timeLeft, { start, pause, reset, isRunning }] = useCountdown(60);
+  
+  return (
+    <div>
+      <div>Time: {timeLeft}s</div>
+      <button onClick={isRunning ? pause : start}>
+        {isRunning ? 'Pause' : 'Start'}
+      </button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+### Responsive Modal with Click Outside
+```tsx
+function Modal({ children, onClose }) {
+  const modalRef = useRef(null);
+  const mobile = isMobile();
+  
+  useClickOutside(modalRef, () => {
+    if (!mobile) onClose(); // Only close on outside click for desktop
+  });
+  
+  return (
+    <div ref={modalRef} className={mobile ? 'mobile-modal' : 'desktop-modal'}>
+      {children}
+    </div>
+  );
+}
+```
+
+### Network Status Indicator
+```tsx
+function NetworkStatus() {
+  const { isOnline, latency } = usePing('https://api.example.com/ping');
+  
+  return (
+    <div className={`status ${isOnline ? 'online' : 'offline'}`}>
+      {isOnline ? `Online (${latency}ms)` : 'Offline'}
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+All hooks include comprehensive TypeScript definitions:
+
+```tsx
+// Types are automatically inferred
+const [timeLeft, controls] = useCountdown(60);
+// timeLeft: number
+// controls: { start: () => void, pause: () => void, reset: () => void, isRunning: boolean }
+
+const mobile = isMobile();
+// mobile: boolean
+
+const { isOnline, latency } = usePing('https://api.example.com');
+// isOnline: boolean
+// latency: number | null
+```
+
+## Performance
+
+Light Hooks are designed with performance in mind:
+
+- **Tree Shakable**: Import only the hooks you use
+- **Zero Dependencies**: No external dependencies to bloat your bundle
+- **Optimized**: Each hook uses efficient React patterns
+- **Memoized**: Internal optimizations prevent unnecessary re-renders
+
+Ready to explore individual hooks? Click on any hook in the navigation to see detailed documentation, examples, and API reference.

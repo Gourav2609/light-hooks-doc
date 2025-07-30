@@ -1,0 +1,264 @@
+---
+title: useCountdown
+description: Manage countdown timers with automatic decrement and full control over start, pause, and reset functionality.
+---
+
+The `useCountdown` hook provides a simple yet powerful way to manage countdown timers in your React applications. Perfect for OTP timers, game countdowns, limited-time offers, and any scenario requiring time-based interactions.
+
+## Basic Usage
+
+```tsx
+import { useCountdown } from 'light-hooks';
+
+function Timer() {
+  const [timeLeft, { start, pause, reset, isRunning }] = useCountdown(60);
+  
+  return (
+    <div>
+      <h2>Time Remaining: {timeLeft} seconds</h2>
+      <button onClick={start} disabled={isRunning}>
+        Start
+      </button>
+      <button onClick={pause} disabled={!isRunning}>
+        Pause
+      </button>
+      <button onClick={reset}>
+        Reset
+      </button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `initialTime` | `number` | - | Initial countdown time in seconds |
+| `options` | `object` | `{}` | Configuration options |
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `autoStart` | `boolean` | `false` | Whether to start countdown automatically |
+| `onComplete` | `() => void` | - | Callback when countdown reaches zero |
+| `interval` | `number` | `1000` | Update interval in milliseconds |
+
+### Return Value
+
+Returns a tuple with:
+- `timeLeft` (number): Current time remaining
+- `controls` (object): Control methods and state
+
+#### Controls Object
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `start` | `() => void` | Start the countdown |
+| `pause` | `() => void` | Pause the countdown |
+| `reset` | `() => void` | Reset to initial time |
+| `isRunning` | `boolean` | Whether countdown is active |
+
+## Examples
+
+### OTP Timer
+
+```tsx
+function OTPInput() {
+  const [timeLeft, { start, reset, isRunning }] = useCountdown(30, {
+    autoStart: true,
+    onComplete: () => alert('OTP expired!')
+  });
+  
+  const [otp, setOtp] = useState('');
+  
+  return (
+    <div>
+      <input 
+        value={otp}
+        onChange={(e) => setOtp(e.target.value)}
+        placeholder="Enter OTP"
+        disabled={timeLeft === 0}
+      />
+      <p>
+        {timeLeft > 0 
+          ? `Expires in ${timeLeft}s` 
+          : 'OTP expired'
+        }
+      </p>
+      {timeLeft === 0 && (
+        <button onClick={() => { reset(); start(); }}>
+          Resend OTP
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Game Timer
+
+```tsx
+function GameTimer() {
+  const [timeLeft, { start, pause, reset, isRunning }] = useCountdown(300, {
+    onComplete: () => endGame()
+  });
+  
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  
+  return (
+    <div className="game-timer">
+      <h2>
+        {String(minutes).padStart(2, '0')}:
+        {String(seconds).padStart(2, '0')}
+      </h2>
+      <div>
+        <button onClick={isRunning ? pause : start}>
+          {isRunning ? '⏸️ Pause' : '▶️ Start'}
+        </button>
+        <button onClick={reset}>
+          🔄 Reset
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Limited Time Offer
+
+```tsx
+function OfferBanner() {
+  const [timeLeft, { isRunning }] = useCountdown(3600, { // 1 hour
+    autoStart: true,
+    onComplete: () => setOfferExpired(true)
+  });
+  
+  const [offerExpired, setOfferExpired] = useState(false);
+  
+  if (offerExpired) {
+    return null;
+  }
+  
+  const hours = Math.floor(timeLeft / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
+  const seconds = timeLeft % 60;
+  
+  return (
+    <div className="offer-banner">
+      <h3>⚡ Limited Time Offer!</h3>
+      <p>Expires in {hours}h {minutes}m {seconds}s</p>
+      <button>Claim Now</button>
+    </div>
+  );
+}
+```
+
+### Custom Interval
+
+```tsx
+function FastTimer() {
+  // Update every 100ms for smooth animation
+  const [timeLeft, controls] = useCountdown(10, {
+    interval: 100,
+    autoStart: true
+  });
+  
+  // Convert to display with decimal
+  const displayTime = (timeLeft / 10).toFixed(1);
+  
+  return (
+    <div>
+      <h2 style={{ fontSize: '2rem', fontFamily: 'monospace' }}>
+        {displayTime}s
+      </h2>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Always Handle Completion
+```tsx
+// ✅ Good: Handle when timer reaches zero
+const [timeLeft, controls] = useCountdown(60, {
+  onComplete: () => {
+    // Handle completion
+    setGameOver(true);
+  }
+});
+
+// ❌ Avoid: Not handling completion state
+const [timeLeft, controls] = useCountdown(60);
+```
+
+### 2. Provide User Feedback
+```tsx
+// ✅ Good: Show timer state to user
+<button onClick={isRunning ? pause : start}>
+  {isRunning ? 'Pause' : 'Start'} Timer
+</button>
+
+// ❌ Avoid: No indication of timer state
+<button onClick={start}>Start</button>
+```
+
+### 3. Format Time for Display
+```tsx
+// ✅ Good: Format time nicely
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// ❌ Avoid: Raw seconds display for long durations
+<div>{timeLeft} seconds</div>
+```
+
+## TypeScript
+
+The hook is fully typed:
+
+```tsx
+import { useCountdown } from 'light-hooks';
+
+// Type inference works automatically
+const [timeLeft, controls] = useCountdown(60);
+// timeLeft: number
+// controls: {
+//   start: () => void;
+//   pause: () => void;
+//   reset: () => void;
+//   isRunning: boolean;
+// }
+
+// With options
+const [timeLeft, controls] = useCountdown(60, {
+  autoStart: true,
+  onComplete: () => console.log('Done!'),
+  interval: 1000
+});
+```
+
+## Common Issues
+
+### Timer Not Starting
+If your timer isn't starting automatically, make sure to either:
+- Set `autoStart: true` in options, or
+- Call `start()` manually
+
+### Performance with Fast Updates
+For intervals less than 100ms, consider if you really need that frequency:
+```tsx
+// Be cautious with very fast updates
+const [timeLeft] = useCountdown(10, { interval: 16 }); // 60fps
+```
+
+### Memory Leaks
+The hook automatically cleans up timers when the component unmounts, so no manual cleanup is needed.
