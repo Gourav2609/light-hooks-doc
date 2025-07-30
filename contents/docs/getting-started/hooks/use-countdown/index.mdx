@@ -1,30 +1,53 @@
 ---
 title: useCountdown
-description: Manage countdown timers with automatic decrement and full control over start, pause, and reset functionality.
+description: A flexible React hook for creating countdown timers with support for date-based or duration-based countdowns, formatted time display, and full control capabilities.
 ---
 
-The `useCountdown` hook provides a simple yet powerful way to manage countdown timers in your React applications. Perfect for OTP timers, game countdowns, limited-time offers, and any scenario requiring time-based interactions.
+The `useCountdown` hook provides a comprehensive solution for countdown timers in React applications. It supports both duration-based countdowns (e.g., "60 seconds from now") and date-based countdowns (e.g., "until New Year's Eve"), with automatic formatting and complete control over timer state.
 
 ## Basic Usage
 
+### Simple Duration Countdown
+
 ```tsx
-import { useCountdown } from 'light-hooks';
+import { useCountdown } from "light-hooks";
 
 function Timer() {
-  const [timeLeft, { start, pause, reset, isRunning }] = useCountdown(60);
-  
+  const { timeLeft, isActive, start, pause, reset } = useCountdown(60);
+
   return (
     <div>
       <h2>Time Remaining: {timeLeft} seconds</h2>
-      <button onClick={start} disabled={isRunning}>
+      <button onClick={start} disabled={isActive}>
         Start
       </button>
-      <button onClick={pause} disabled={!isRunning}>
+      <button onClick={pause} disabled={!isActive}>
         Pause
       </button>
-      <button onClick={reset}>
-        Reset
-      </button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+### Date-Based Countdown
+
+```tsx
+function NewYearCountdown() {
+  const targetDate = new Date("2024-01-01T00:00:00");
+  const { formattedTime, isCompleted } = useCountdown(targetDate);
+
+  if (isCompleted) {
+    return <h1>🎉 Happy New Year!</h1>;
+  }
+
+  return (
+    <div>
+      <h2>New Year Countdown</h2>
+      <p>
+        {formattedTime.days}d {formattedTime.hours}h {formattedTime.minutes}m{" "}
+        {formattedTime.seconds}s
+      </p>
     </div>
   );
 }
@@ -34,33 +57,46 @@ function Timer() {
 
 ### Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `initialTime` | `number` | - | Initial countdown time in seconds |
-| `options` | `object` | `{}` | Configuration options |
+The hook accepts three different parameter types:
 
-### Options
+| Type                  | Description                       | Example                                                  |
+| --------------------- | --------------------------------- | -------------------------------------------------------- |
+| `number`              | Duration in seconds for countdown | `useCountdown(60)`                                       |
+| `Date`                | Target date to countdown to       | `useCountdown(new Date('2024-12-31'))`                   |
+| `UseCountdownOptions` | Full configuration object         | `useCountdown({ initialSeconds: 60, autoStart: false })` |
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `autoStart` | `boolean` | `false` | Whether to start countdown automatically |
-| `onComplete` | `() => void` | - | Callback when countdown reaches zero |
-| `interval` | `number` | `1000` | Update interval in milliseconds |
+### UseCountdownOptions
+
+| Option           | Type         | Default | Description                              |
+| ---------------- | ------------ | ------- | ---------------------------------------- |
+| `targetDate`     | `Date`       | -       | Target date to countdown to              |
+| `initialSeconds` | `number`     | `0`     | Initial countdown duration in seconds    |
+| `onComplete`     | `() => void` | -       | Callback when countdown reaches zero     |
+| `autoStart`      | `boolean`    | `true`  | Whether to start countdown automatically |
+| `interval`       | `number`     | `1000`  | Update interval in milliseconds          |
 
 ### Return Value
 
-Returns a tuple with:
-- `timeLeft` (number): Current time remaining
-- `controls` (object): Control methods and state
+Returns a `CountdownReturn` object with:
 
-#### Controls Object
+| Property        | Type         | Description                                         |
+| --------------- | ------------ | --------------------------------------------------- |
+| `timeLeft`      | `number`     | Current time remaining in seconds                   |
+| `isActive`      | `boolean`    | Whether countdown is currently running              |
+| `isCompleted`   | `boolean`    | Whether countdown has reached zero                  |
+| `start`         | `() => void` | Start or resume the countdown                       |
+| `pause`         | `() => void` | Pause the countdown                                 |
+| `reset`         | `() => void` | Reset to initial state                              |
+| `formattedTime` | `object`     | Time broken down into days, hours, minutes, seconds |
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `start` | `() => void` | Start the countdown |
-| `pause` | `() => void` | Pause the countdown |
-| `reset` | `() => void` | Reset to initial time |
-| `isRunning` | `boolean` | Whether countdown is active |
+#### formattedTime Object
+
+| Property  | Type     | Description                                 |
+| --------- | -------- | ------------------------------------------- |
+| `days`    | `number` | Number of complete days remaining           |
+| `hours`   | `number` | Number of complete hours remaining (0-23)   |
+| `minutes` | `number` | Number of complete minutes remaining (0-59) |
+| `seconds` | `number` | Number of complete seconds remaining (0-59) |
 
 ## Examples
 
@@ -68,29 +104,30 @@ Returns a tuple with:
 
 ```tsx
 function OTPInput() {
-  const [timeLeft, { start, reset, isRunning }] = useCountdown(30, {
+  const { timeLeft, isCompleted, reset, start } = useCountdown({
+    initialSeconds: 30,
     autoStart: true,
-    onComplete: () => alert('OTP expired!')
+    onComplete: () => alert("OTP expired!"),
   });
-  
-  const [otp, setOtp] = useState('');
-  
+
+  const [otp, setOtp] = useState("");
+
   return (
     <div>
-      <input 
+      <input
         value={otp}
         onChange={(e) => setOtp(e.target.value)}
         placeholder="Enter OTP"
-        disabled={timeLeft === 0}
+        disabled={isCompleted}
       />
-      <p>
-        {timeLeft > 0 
-          ? `Expires in ${timeLeft}s` 
-          : 'OTP expired'
-        }
-      </p>
-      {timeLeft === 0 && (
-        <button onClick={() => { reset(); start(); }}>
+      <p>{!isCompleted ? `Expires in ${timeLeft}s` : "OTP expired"}</p>
+      {isCompleted && (
+        <button
+          onClick={() => {
+            reset();
+            start();
+          }}
+        >
           Resend OTP
         </button>
       )}
@@ -99,83 +136,142 @@ function OTPInput() {
 }
 ```
 
-### Game Timer
+### Game Timer with Formatted Display
 
 ```tsx
 function GameTimer() {
-  const [timeLeft, { start, pause, reset, isRunning }] = useCountdown(300, {
-    onComplete: () => endGame()
-  });
-  
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  
+  const { formattedTime, isActive, start, pause, reset, isCompleted } =
+    useCountdown({
+      initialSeconds: 300, // 5 minutes
+      autoStart: false,
+      onComplete: () => endGame(),
+    });
+
   return (
     <div className="game-timer">
       <h2>
-        {String(minutes).padStart(2, '0')}:
-        {String(seconds).padStart(2, '0')}
+        {String(formattedTime.minutes).padStart(2, "0")}:
+        {String(formattedTime.seconds).padStart(2, "0")}
       </h2>
       <div>
-        <button onClick={isRunning ? pause : start}>
-          {isRunning ? '⏸️ Pause' : '▶️ Start'}
+        <button onClick={isActive ? pause : start} disabled={isCompleted}>
+          {isActive ? "⏸️ Pause" : "▶️ Start"}
         </button>
-        <button onClick={reset}>
-          🔄 Reset
-        </button>
+        <button onClick={reset}>🔄 Reset</button>
+      </div>
+      {isCompleted && <p>Game Over!</p>}
+    </div>
+  );
+}
+```
+
+### Event Countdown with Full Date Display
+
+```tsx
+function EventCountdown() {
+  const eventDate = new Date("2024-12-25T00:00:00"); // Christmas
+  const { formattedTime, isCompleted } = useCountdown(eventDate);
+
+  if (isCompleted) {
+    return (
+      <div className="event-banner">
+        <h3>🎄 Merry Christmas!</h3>
+        <p>The event has arrived!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="event-banner">
+      <h3>🎄 Christmas Countdown</h3>
+      <div className="countdown-display">
+        <div className="time-unit">
+          <span className="number">{formattedTime.days}</span>
+          <span className="label">Days</span>
+        </div>
+        <div className="time-unit">
+          <span className="number">{formattedTime.hours}</span>
+          <span className="label">Hours</span>
+        </div>
+        <div className="time-unit">
+          <span className="number">{formattedTime.minutes}</span>
+          <span className="label">Minutes</span>
+        </div>
+        <div className="time-unit">
+          <span className="number">{formattedTime.seconds}</span>
+          <span className="label">Seconds</span>
+        </div>
       </div>
     </div>
   );
 }
 ```
 
-### Limited Time Offer
+### High-Precision Timer
 
 ```tsx
-function OfferBanner() {
-  const [timeLeft, { isRunning }] = useCountdown(3600, { // 1 hour
-    autoStart: true,
-    onComplete: () => setOfferExpired(true)
+function PrecisionTimer() {
+  // Update every 100ms for smooth animation
+  const { timeLeft, formattedTime, isActive, start, pause } = useCountdown({
+    initialSeconds: 10,
+    interval: 100,
+    autoStart: false,
   });
-  
-  const [offerExpired, setOfferExpired] = useState(false);
-  
-  if (offerExpired) {
-    return null;
-  }
-  
-  const hours = Math.floor(timeLeft / 3600);
-  const minutes = Math.floor((timeLeft % 3600) / 60);
-  const seconds = timeLeft % 60;
-  
+
+  // Display with decimal precision
+  const displayTime = (
+    timeLeft +
+    ((formattedTime.seconds * 1000) % 1000) / 1000
+  ).toFixed(1);
+
   return (
-    <div className="offer-banner">
-      <h3>⚡ Limited Time Offer!</h3>
-      <p>Expires in {hours}h {minutes}m {seconds}s</p>
-      <button>Claim Now</button>
+    <div>
+      <h2 style={{ fontSize: "2rem", fontFamily: "monospace" }}>
+        {displayTime}s
+      </h2>
+      <button onClick={isActive ? pause : start}>
+        {isActive ? "Pause" : "Start"}
+      </button>
     </div>
   );
 }
 ```
 
-### Custom Interval
+### Auto-Start with Manual Control
 
 ```tsx
-function FastTimer() {
-  // Update every 100ms for smooth animation
-  const [timeLeft, controls] = useCountdown(10, {
-    interval: 100,
-    autoStart: true
-  });
-  
-  // Convert to display with decimal
-  const displayTime = (timeLeft / 10).toFixed(1);
-  
+function FlexibleTimer() {
+  const { timeLeft, isActive, isCompleted, start, pause, reset } = useCountdown(
+    {
+      initialSeconds: 120,
+      autoStart: true, // Starts immediately
+      onComplete: () => {
+        console.log("Timer completed!");
+        // Auto-restart for continuous operation
+        setTimeout(reset, 1000);
+      },
+    }
+  );
+
   return (
     <div>
-      <h2 style={{ fontSize: '2rem', fontFamily: 'monospace' }}>
-        {displayTime}s
-      </h2>
+      <h3>Auto-Restart Timer</h3>
+      <p>
+        Time: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
+      </p>
+      <p>
+        Status: {isCompleted ? "Completed" : isActive ? "Running" : "Paused"}
+      </p>
+
+      <div>
+        <button onClick={start} disabled={isActive}>
+          Start
+        </button>
+        <button onClick={pause} disabled={!isActive}>
+          Pause
+        </button>
+        <button onClick={reset}>Reset</button>
+      </div>
     </div>
   );
 }
@@ -184,81 +280,321 @@ function FastTimer() {
 ## Best Practices
 
 ### 1. Always Handle Completion
+
 ```tsx
 // ✅ Good: Handle when timer reaches zero
-const [timeLeft, controls] = useCountdown(60, {
+const { timeLeft, isCompleted } = useCountdown({
+  initialSeconds: 60,
   onComplete: () => {
     // Handle completion
     setGameOver(true);
-  }
+    showNotification("Time is up!");
+  },
 });
 
+// Check completion state in render
+if (isCompleted) {
+  return <div>Timer completed!</div>;
+}
+
 // ❌ Avoid: Not handling completion state
-const [timeLeft, controls] = useCountdown(60);
+const { timeLeft } = useCountdown(60);
 ```
 
-### 2. Provide User Feedback
+### 2. Provide Clear User Feedback
+
 ```tsx
 // ✅ Good: Show timer state to user
-<button onClick={isRunning ? pause : start}>
-  {isRunning ? 'Pause' : 'Start'} Timer
+const { isActive, isCompleted, start, pause } = useCountdown(60);
+
+<button onClick={isActive ? pause : start} disabled={isCompleted}>
+  {isCompleted
+    ? 'Completed'
+    : isActive
+    ? 'Pause Timer'
+    : 'Start Timer'
+  }
 </button>
 
 // ❌ Avoid: No indication of timer state
 <button onClick={start}>Start</button>
 ```
 
-### 3. Format Time for Display
+### 3. Use Formatted Time for Better Display
+
 ```tsx
-// ✅ Good: Format time nicely
-const formatTime = (seconds) => {
+// ✅ Good: Use built-in formatted time
+const { formattedTime } = useCountdown(3665); // 1 hour, 1 minute, 5 seconds
+<div>
+  {formattedTime.hours}h {formattedTime.minutes}m {formattedTime.seconds}s
+</div>;
+
+// ✅ Also good: Custom formatting function
+const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 // ❌ Avoid: Raw seconds display for long durations
-<div>{timeLeft} seconds</div>
+<div>{timeLeft} seconds</div>; // Bad for 3665 seconds
+```
+
+### 4. Choose Appropriate Parameter Style
+
+```tsx
+// ✅ Good: Simple cases use direct parameters
+const simpleTimer = useCountdown(60); // Just 60 seconds
+const dateTimer = useCountdown(new Date("2024-12-31")); // Until New Year
+
+// ✅ Good: Complex cases use options object
+const complexTimer = useCountdown({
+  initialSeconds: 300,
+  autoStart: false,
+  onComplete: handleCompletion,
+  interval: 500, // Faster updates
+});
+
+// ❌ Avoid: Using options object for simple cases
+const overComplex = useCountdown({ initialSeconds: 60 }); // Just use useCountdown(60)
+```
+
+### 5. Handle Date-Based Countdowns Properly
+
+```tsx
+// ✅ Good: Account for timezone and date validation
+const eventDate = new Date("2024-12-31T23:59:59");
+const { timeLeft, isCompleted } = useCountdown(eventDate);
+
+// Validate the date
+if (eventDate.getTime() <= Date.now()) {
+  return <div>Event has already passed!</div>;
+}
+
+// ❌ Avoid: Not validating future dates
+const badDate = new Date("2020-01-01"); // Past date
+const timer = useCountdown(badDate); // Will be completed immediately
 ```
 
 ## TypeScript
 
-The hook is fully typed:
+The hook is fully typed with comprehensive interfaces:
 
 ```tsx
-import { useCountdown } from 'light-hooks';
+import {
+  useCountdown,
+  UseCountdownOptions,
+  CountdownReturn,
+} from "light-hooks";
 
 // Type inference works automatically
-const [timeLeft, controls] = useCountdown(60);
-// timeLeft: number
-// controls: {
-//   start: () => void;
-//   pause: () => void;
-//   reset: () => void;
-//   isRunning: boolean;
-// }
+const countdown = useCountdown(60);
+// countdown: CountdownReturn
 
-// With options
-const [timeLeft, controls] = useCountdown(60, {
-  autoStart: true,
-  onComplete: () => console.log('Done!'),
-  interval: 1000
+// Explicit typing (optional)
+const explicitCountdown: CountdownReturn = useCountdown(60);
+
+// With configuration object
+const configuredCountdown = useCountdown({
+  initialSeconds: 300,
+  autoStart: false,
+  onComplete: () => console.log("Done!"),
+  interval: 1000,
 });
+
+// Date-based countdown
+const dateCountdown = useCountdown(new Date("2024-12-31"));
+
+// Custom type definitions
+interface CustomTimerProps {
+  duration: number;
+  onFinish: () => void;
+}
+
+function CustomTimer({ duration, onFinish }: CustomTimerProps) {
+  const { timeLeft, formattedTime, isCompleted } = useCountdown({
+    initialSeconds: duration,
+    onComplete: onFinish,
+    autoStart: true,
+  });
+
+  return (
+    <div>
+      Time: {formattedTime.minutes}:{formattedTime.seconds}
+    </div>
+  );
+}
+```
+
+### Interface Definitions
+
+```tsx
+interface UseCountdownOptions {
+  targetDate?: Date;
+  initialSeconds?: number;
+  onComplete?: () => void;
+  autoStart?: boolean;
+  interval?: number;
+}
+
+interface CountdownReturn {
+  timeLeft: number;
+  isActive: boolean;
+  isCompleted: boolean;
+  start: () => void;
+  pause: () => void;
+  reset: () => void;
+  formattedTime: {
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
+}
 ```
 
 ## Common Issues
 
 ### Timer Not Starting
-If your timer isn't starting automatically, make sure to either:
-- Set `autoStart: true` in options, or
-- Call `start()` manually
 
-### Performance with Fast Updates
-For intervals less than 100ms, consider if you really need that frequency:
+If your timer isn't starting automatically:
+
 ```tsx
-// Be cautious with very fast updates
-const [timeLeft] = useCountdown(10, { interval: 16 }); // 60fps
+// ✅ Solution 1: Check autoStart setting
+const { start } = useCountdown({
+  initialSeconds: 60,
+  autoStart: true, // Make sure this is true
+});
+
+// ✅ Solution 2: Call start manually
+const { start } = useCountdown({
+  initialSeconds: 60,
+  autoStart: false,
+});
+// Call start() when needed
+useEffect(() => {
+  start();
+}, [start]);
 ```
 
-### Memory Leaks
-The hook automatically cleans up timers when the component unmounts, so no manual cleanup is needed.
+### Date-Based Countdown Issues
+
+```tsx
+// ❌ Problem: Date in the past
+const pastDate = new Date("2020-01-01");
+const { isCompleted } = useCountdown(pastDate); // Always completed
+
+// ✅ Solution: Validate date is in future
+const futureDate = new Date("2024-12-31");
+if (futureDate.getTime() <= Date.now()) {
+  console.warn("Target date is in the past");
+}
+const countdown = useCountdown(futureDate);
+```
+
+### Performance with Fast Updates
+
+```tsx
+// ⚠️ Be cautious with very fast intervals
+const fastTimer = useCountdown({
+  initialSeconds: 10,
+  interval: 16, // 60fps - may impact performance
+});
+
+// ✅ Consider if you really need such precision
+const reasonableTimer = useCountdown({
+  initialSeconds: 10,
+  interval: 100, // 10fps - usually sufficient
+});
+```
+
+### Memory Leaks Prevention
+
+The hook automatically cleans up intervals when the component unmounts, but be aware of:
+
+```tsx
+// ✅ Good: onComplete callback doesn't cause memory leaks
+const { timeLeft } = useCountdown({
+  initialSeconds: 60,
+  onComplete: useCallback(() => {
+    // Stable callback reference
+    handleCompletion();
+  }, []), // Empty dependency array if handleCompletion is stable
+});
+
+// ⚠️ Potential issue: Creating new callback on every render
+const { timeLeft } = useCountdown({
+  initialSeconds: 60,
+  onComplete: () => {
+    // New function created every render
+    handleCompletion();
+  },
+});
+```
+
+### State Synchronization
+
+```tsx
+// ✅ Good: Reset when external state changes
+const [targetTime, setTargetTime] = useState(60);
+const { reset } = useCountdown(targetTime);
+
+useEffect(() => {
+  reset(); // Reset countdown when target time changes
+}, [targetTime, reset]);
+```
+
+## Advanced Usage
+
+### Conditional Countdown
+
+```tsx
+function ConditionalTimer({ shouldStart }: { shouldStart: boolean }) {
+  const { timeLeft, start, pause, isActive } = useCountdown({
+    initialSeconds: 30,
+    autoStart: false,
+  });
+
+  useEffect(() => {
+    if (shouldStart && !isActive) {
+      start();
+    } else if (!shouldStart && isActive) {
+      pause();
+    }
+  }, [shouldStart, isActive, start, pause]);
+
+  return <div>Time: {timeLeft}s</div>;
+}
+```
+
+### Multiple Countdown Synchronization
+
+```tsx
+function MultipleTimers() {
+  const timer1 = useCountdown({ initialSeconds: 60, autoStart: false });
+  const timer2 = useCountdown({ initialSeconds: 90, autoStart: false });
+  const timer3 = useCountdown({ initialSeconds: 120, autoStart: false });
+
+  const startAll = () => {
+    timer1.start();
+    timer2.start();
+    timer3.start();
+  };
+
+  const resetAll = () => {
+    timer1.reset();
+    timer2.reset();
+    timer3.reset();
+  };
+
+  return (
+    <div>
+      <div>Timer 1: {timer1.timeLeft}s</div>
+      <div>Timer 2: {timer2.timeLeft}s</div>
+      <div>Timer 3: {timer3.timeLeft}s</div>
+      <button onClick={startAll}>Start All</button>
+      <button onClick={resetAll}>Reset All</button>
+    </div>
+  );
+}
+```

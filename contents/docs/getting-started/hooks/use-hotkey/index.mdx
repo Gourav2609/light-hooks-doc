@@ -1,0 +1,889 @@
+---
+title: useHotKey
+description: A powerful React hook for handling keyboard shortcuts and hotkey combinations with support for modifier keys, input field detection, and flexible configuration options.
+---
+
+The `useHotKey` hook provides a comprehensive solution for keyboard shortcut handling in React applications. It supports simple key bindings, complex modifier combinations, multiple hotkey configurations, and intelligent input field detection to prevent conflicts while typing.
+
+## Basic Usage
+
+### Simple Key Binding
+
+```tsx
+import { useHotKey } from "light-hooks";
+
+function App() {
+  const isEscapePressed = useHotKey("Escape", () => {
+    console.log("Escape key pressed!");
+  });
+
+  return (
+    <div>
+      <p>Press the Escape key to trigger the action</p>
+      {isEscapePressed && <span>🔥 Escape is currently pressed!</span>}
+    </div>
+  );
+}
+```
+
+### Key Combination with Modifiers
+
+```tsx
+function SaveButton() {
+  useHotKey({ key: "s", modifiers: ["ctrl"], preventDefault: true }, () => {
+    console.log("Save action triggered!");
+    // Implement save functionality
+  });
+
+  return <button>Save (Ctrl+S)</button>;
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter      | Type                                                      | Description                                  |
+| -------------- | --------------------------------------------------------- | -------------------------------------------- |
+| `hotKeyConfig` | `HotKeyConfig \| HotKey \| Array<HotKeyConfig \| HotKey>` | The hotkey configuration(s) to listen for    |
+| `callback`     | `() => void`                                              | Function called when the hotkey is triggered |
+| `options`      | `UseHotKeyOptions`                                        | Optional configuration object                |
+
+### HotKeyConfig Interface
+
+| Property          | Type            | Default | Description                                      |
+| ----------------- | --------------- | ------- | ------------------------------------------------ |
+| `key`             | `HotKey`        | -       | The main key to listen for                       |
+| `modifiers`       | `ModifierKey[]` | `[]`    | Optional modifier keys (ctrl, alt, shift, meta)  |
+| `preventDefault`  | `boolean`       | -       | Prevent default browser behavior for this hotkey |
+| `stopPropagation` | `boolean`       | -       | Stop event propagation for this hotkey           |
+
+### UseHotKeyOptions Interface
+
+| Option              | Type                      | Default    | Description                                |
+| ------------------- | ------------------------- | ---------- | ------------------------------------------ |
+| `enabled`           | `boolean`                 | `true`     | Whether the hotkey listener is active      |
+| `preventDefault`    | `boolean`                 | `false`    | Global setting to prevent default behavior |
+| `stopPropagation`   | `boolean`                 | `false`    | Global setting to stop event propagation   |
+| `target`            | `HTMLElement \| Document` | `document` | DOM element to attach event listeners to   |
+| `ignoreInputFields` | `boolean`                 | `true`     | Ignore hotkeys when typing in input fields |
+
+### Supported Key Types
+
+#### Modifier Keys
+
+`ctrl`, `alt`, `shift`, `meta`
+
+#### Special Keys
+
+`Escape`, `Enter`, `Tab`, `Backspace`, `Delete`, `Space`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`
+
+#### Function Keys
+
+`F1`, `F2`, `F3`, `F4`, `F5`, `F6`, `F7`, `F8`, `F9`, `F10`, `F11`, `F12`
+
+#### Alphabet Keys
+
+`a` through `z` (lowercase)
+
+#### Numeric Keys
+
+`0` through `9`
+
+#### Symbol Keys
+
+`!`, `@`, `#`, `$`, `%`, `^`, `&`, `*`, `(`, `)`, `-`, `_`, `=`, `+`, `[`, `]`, `{`, `}`, `;`, `:`, `'`, `"`, `,`, `.`, `/`, `<`, `>`, `?`, `\`, `|`, `` ` ``, `~`
+
+### Return Value
+
+Returns a `boolean` indicating whether the hotkey is currently being pressed.
+
+## Examples
+
+### Modal Controls
+
+```tsx
+function Modal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  // Close modal with Escape key
+  useHotKey("Escape", onClose, { enabled: isOpen });
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <h2>Modal Title</h2>
+        <p>Press Escape to close this modal</p>
+        <button onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Global Application Shortcuts
+
+```tsx
+function App() {
+  const [theme, setTheme] = useState("light");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Toggle theme with Ctrl+T
+  useHotKey({ key: "t", modifiers: ["ctrl"], preventDefault: true }, () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"))
+  );
+
+  // Toggle sidebar with Ctrl+B
+  useHotKey({ key: "b", modifiers: ["ctrl"], preventDefault: true }, () =>
+    setSidebarOpen((prev) => !prev)
+  );
+
+  // Quick help with F1
+  useHotKey("F1", () => {
+    window.open("/help", "_blank");
+  });
+
+  return (
+    <div className={`app ${theme}`}>
+      <aside className={sidebarOpen ? "open" : "closed"}>Sidebar content</aside>
+      <main>
+        <p>Try these shortcuts:</p>
+        <ul>
+          <li>Ctrl+T: Toggle theme</li>
+          <li>Ctrl+B: Toggle sidebar</li>
+          <li>F1: Open help</li>
+        </ul>
+      </main>
+    </div>
+  );
+}
+```
+
+### Cross-Platform Save Shortcut
+
+```tsx
+function TextEditor() {
+  const [content, setContent] = useState("");
+  const [saved, setSaved] = useState(true);
+
+  const saveContent = () => {
+    // Simulate save operation
+    console.log("Saving content:", content);
+    setSaved(true);
+  };
+
+  // Support both Ctrl+S (Windows/Linux) and Cmd+S (Mac)
+  useHotKey(
+    [
+      { key: "s", modifiers: ["ctrl"], preventDefault: true },
+      { key: "s", modifiers: ["meta"], preventDefault: true },
+    ],
+    saveContent
+  );
+
+  return (
+    <div>
+      <div className="editor-header">
+        <span>Document {saved ? "(Saved)" : "(Unsaved)"}</span>
+        <span>Press Ctrl+S (or Cmd+S on Mac) to save</span>
+      </div>
+      <textarea
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+          setSaved(false);
+        }}
+        placeholder="Start typing..."
+        style={{ width: "100%", height: "300px" }}
+      />
+    </div>
+  );
+}
+```
+
+### Navigation Shortcuts
+
+```tsx
+function Gallery() {
+  const [currentImage, setCurrentImage] = useState(0);
+  const images = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg"];
+
+  // Navigate with arrow keys
+  useHotKey("ArrowLeft", () => {
+    setCurrentImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  });
+
+  useHotKey("ArrowRight", () => {
+    setCurrentImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  });
+
+  // Jump to first/last with Home/End
+  useHotKey("Home", () => setCurrentImage(0));
+  useHotKey("End", () => setCurrentImage(images.length - 1));
+
+  return (
+    <div className="gallery">
+      <img
+        src={images[currentImage]}
+        alt={`Image ${currentImage + 1}`}
+        style={{ maxWidth: "100%", height: "400px" }}
+      />
+      <div className="controls">
+        <p>
+          Image {currentImage + 1} of {images.length}
+        </p>
+        <p>Use arrow keys, Home, or End to navigate</p>
+      </div>
+    </div>
+  );
+}
+```
+
+### Game Controls
+
+```tsx
+function Game() {
+  const [player, setPlayer] = useState({ x: 0, y: 0 });
+  const [gameActive, setGameActive] = useState(false);
+
+  // Game movement controls (only when game is active)
+  useHotKey(
+    "w",
+    () => {
+      setPlayer((prev) => ({ ...prev, y: prev.y - 1 }));
+    },
+    { enabled: gameActive }
+  );
+
+  useHotKey(
+    "s",
+    () => {
+      setPlayer((prev) => ({ ...prev, y: prev.y + 1 }));
+    },
+    { enabled: gameActive }
+  );
+
+  useHotKey(
+    "a",
+    () => {
+      setPlayer((prev) => ({ ...prev, x: prev.x - 1 }));
+    },
+    { enabled: gameActive }
+  );
+
+  useHotKey(
+    "d",
+    () => {
+      setPlayer((prev) => ({ ...prev, x: prev.x + 1 }));
+    },
+    { enabled: gameActive }
+  );
+
+  // Pause game with spacebar
+  useHotKey(
+    "Space",
+    () => {
+      setGameActive((prev) => !prev);
+    },
+    { preventDefault: true }
+  );
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <div
+          className="player"
+          style={{
+            position: "absolute",
+            left: `${player.x * 20}px`,
+            top: `${player.y * 20}px`,
+            width: "20px",
+            height: "20px",
+            backgroundColor: gameActive ? "blue" : "gray",
+          }}
+        />
+      </div>
+      <div className="controls">
+        <p>Status: {gameActive ? "Playing" : "Paused"}</p>
+        <p>
+          Position: ({player.x}, {player.y})
+        </p>
+        <p>Controls: WASD to move, Space to pause/resume</p>
+      </div>
+    </div>
+  );
+}
+```
+
+### Form Shortcuts
+
+```tsx
+function ContactForm() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const submitForm = () => {
+    console.log("Submitting form:", formData);
+    // Handle form submission
+  };
+
+  const clearForm = () => {
+    setFormData({ name: "", email: "", message: "" });
+  };
+
+  // Submit with Ctrl+Enter (common in many applications)
+  useHotKey(
+    { key: "Enter", modifiers: ["ctrl"], preventDefault: true },
+    submitForm
+  );
+
+  // Clear form with Ctrl+R (prevent page refresh)
+  useHotKey({ key: "r", modifiers: ["ctrl"], preventDefault: true }, clearForm);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submitForm();
+      }}
+    >
+      <div>
+        <label>Name:</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
+          }
+        />
+      </div>
+      <div>
+        <label>Email:</label>
+        <input
+          type="email"
+          value={formData.email}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, email: e.target.value }))
+          }
+        />
+      </div>
+      <div>
+        <label>Message:</label>
+        <textarea
+          value={formData.message}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, message: e.target.value }))
+          }
+        />
+      </div>
+      <div className="form-actions">
+        <button type="submit">Submit (Ctrl+Enter)</button>
+        <button type="button" onClick={clearForm}>
+          Clear (Ctrl+R)
+        </button>
+      </div>
+    </form>
+  );
+}
+```
+
+### Custom Target Element
+
+```tsx
+function FocusedInput() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState("");
+
+  // Only listen for hotkeys when input is focused
+  useHotKey(
+    { key: "Enter", modifiers: ["ctrl"] },
+    () => {
+      console.log("Ctrl+Enter in focused input!");
+      setValue((prev) => prev + " [SUBMITTED]");
+    },
+    {
+      target: inputRef.current || document,
+      enabled: !!inputRef.current,
+    }
+  );
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Focus this input and press Ctrl+Enter"
+      />
+      <p>The Ctrl+Enter hotkey only works when the input above is focused</p>
+    </div>
+  );
+}
+```
+
+### Developer Tools Integration
+
+```tsx
+function DebugPanel() {
+  const [debugMode, setDebugMode] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  // Toggle debug mode with Ctrl+Shift+D
+  useHotKey(
+    { key: "d", modifiers: ["ctrl", "shift"], preventDefault: true },
+    () => {
+      setDebugMode((prev) => !prev);
+      setLogs((prev) => [
+        ...prev,
+        `Debug mode ${debugMode ? "disabled" : "enabled"}`,
+      ]);
+    }
+  );
+
+  // Clear logs with Ctrl+Shift+C
+  useHotKey(
+    { key: "c", modifiers: ["ctrl", "shift"], preventDefault: true },
+    () => {
+      setLogs([]);
+    },
+    { enabled: debugMode }
+  );
+
+  if (!debugMode) {
+    return (
+      <div>
+        <p>Press Ctrl+Shift+D to enable debug mode</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="debug-panel">
+      <h3>Debug Panel</h3>
+      <p>Press Ctrl+Shift+D to disable, Ctrl+Shift+C to clear logs</p>
+      <div className="logs">
+        {logs.map((log, index) => (
+          <div key={index}>{log}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Use Meaningful Key Combinations
+
+```tsx
+// ✅ Good: Standard, intuitive shortcuts
+useHotKey({ key: "s", modifiers: ["ctrl"] }, save); // Save
+useHotKey({ key: "z", modifiers: ["ctrl"] }, undo); // Undo
+useHotKey({ key: "f", modifiers: ["ctrl"] }, search); // Find
+
+// ❌ Avoid: Conflicting with browser shortcuts
+useHotKey({ key: "t", modifiers: ["ctrl"] }, () => {}); // Conflicts with new tab
+useHotKey({ key: "w", modifiers: ["ctrl"] }, () => {}); // Conflicts with close tab
+```
+
+### 2. Handle Cross-Platform Differences
+
+```tsx
+// ✅ Good: Support both Ctrl (Windows/Linux) and Cmd (Mac)
+useHotKey(
+  [
+    { key: "s", modifiers: ["ctrl"], preventDefault: true },
+    { key: "s", modifiers: ["meta"], preventDefault: true },
+  ],
+  saveAction
+);
+
+// ✅ Good: Detect platform if needed
+const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+const modifierKey = isMac ? "meta" : "ctrl";
+
+useHotKey(
+  { key: "s", modifiers: [modifierKey], preventDefault: true },
+  saveAction
+);
+```
+
+### 3. Provide Visual Feedback
+
+```tsx
+// ✅ Good: Show available shortcuts to users
+function Toolbar() {
+  useHotKey({ key: "b", modifiers: ["ctrl"] }, makeBold);
+  useHotKey({ key: "i", modifiers: ["ctrl"] }, makeItalic);
+
+  return (
+    <div>
+      <button title="Bold (Ctrl+B)">B</button>
+      <button title="Italic (Ctrl+I)">I</button>
+      <div className="shortcuts-help">
+        Available shortcuts: Ctrl+B (Bold), Ctrl+I (Italic)
+      </div>
+    </div>
+  );
+}
+```
+
+### 4. Manage Hotkey Scope Properly
+
+```tsx
+// ✅ Good: Enable/disable based on context
+function App() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [gameMode, setGameMode] = useState(false);
+
+  // Global shortcuts (always active)
+  useHotKey({ key: "h", modifiers: ["ctrl"] }, showHelp);
+
+  // Modal shortcuts (only when modal is open)
+  useHotKey("Escape", () => setModalOpen(false), { enabled: modalOpen });
+
+  // Game shortcuts (only in game mode)
+  useHotKey("w", moveUp, { enabled: gameMode });
+  useHotKey("s", moveDown, { enabled: gameMode });
+}
+```
+
+### 5. Handle Input Field Conflicts
+
+```tsx
+// ✅ Good: The hook ignores input fields by default
+useHotKey("Enter", submitForm); // Won't trigger while typing in inputs
+
+// ✅ Good: Override when you need hotkeys in input fields
+useHotKey(
+  { key: "Enter", modifiers: ["ctrl"] },
+  submitForm,
+  { ignoreInputFields: false } // Allow in input fields
+);
+
+// ✅ Good: Custom input field detection
+const isCustomInputActive = () => {
+  return document.activeElement?.classList.contains("custom-input");
+};
+
+useHotKey("Tab", nextField, {
+  enabled: !isCustomInputActive(),
+});
+```
+
+### 6. Optimize Performance
+
+```tsx
+// ✅ Good: Use useCallback for complex callbacks
+const handleComplexAction = useCallback(
+  () => {
+    // Complex logic here
+    processData();
+    updateUI();
+    logAction();
+  },
+  [
+    /* dependencies */
+  ]
+);
+
+useHotKey({ key: "s", modifiers: ["ctrl"] }, handleComplexAction);
+
+// ✅ Good: Stable configuration objects
+const saveShortcut = useMemo(
+  () => ({
+    key: "s" as const,
+    modifiers: ["ctrl" as const],
+    preventDefault: true,
+  }),
+  []
+);
+
+useHotKey(saveShortcut, handleSave);
+```
+
+## TypeScript
+
+The hook is fully typed with comprehensive interfaces:
+
+```tsx
+import {
+  useHotKey,
+  HotKeyConfig,
+  UseHotKeyOptions,
+  ModifierKey,
+  HotKey,
+} from "light-hooks";
+
+// Type inference works automatically
+const isPressed = useHotKey("Enter", () => console.log("Enter!"));
+// isPressed: boolean
+
+// Explicit typing (optional)
+const config: HotKeyConfig = {
+  key: "s",
+  modifiers: ["ctrl"],
+  preventDefault: true,
+};
+
+const options: UseHotKeyOptions = {
+  enabled: true,
+  ignoreInputFields: false,
+};
+
+useHotKey(config, saveCallback, options);
+
+// Custom component with typed props
+interface ShortcutButtonProps {
+  hotkey: HotKeyConfig;
+  onTrigger: () => void;
+  children: React.ReactNode;
+}
+
+function ShortcutButton({ hotkey, onTrigger, children }: ShortcutButtonProps) {
+  const isPressed = useHotKey(hotkey, onTrigger);
+
+  return <button className={isPressed ? "pressed" : ""}>{children}</button>;
+}
+```
+
+### Type Definitions
+
+```tsx
+type ModifierKey = "ctrl" | "alt" | "shift" | "meta";
+
+type SpecialKey = "Escape" | "Enter" | "Tab" | "Backspace" | "Delete" |
+  "Space" | "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight" |
+  "Home" | "End" | "PageUp" | "PageDown" | "Insert";
+
+type FunctionKey = "F1" | "F2" | "F3" | "F4" | "F5" | "F6" |
+  "F7" | "F8" | "F9" | "F10" | "F11" | "F12";
+
+type AlphabetKey = "a" | "b" | "c" | /* ... */ "z";
+
+type NumericKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+type SymbolKey = "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" |
+  "(" | ")" | "-" | "_" | "=" | "+" | /* ... */;
+
+type HotKey = SpecialKey | FunctionKey | AlphabetKey | NumericKey | SymbolKey;
+
+interface HotKeyConfig {
+  key: HotKey;
+  modifiers?: ModifierKey[];
+  preventDefault?: boolean;
+  stopPropagation?: boolean;
+}
+
+interface UseHotKeyOptions {
+  enabled?: boolean;
+  preventDefault?: boolean;
+  stopPropagation?: boolean;
+  target?: HTMLElement | Document;
+  ignoreInputFields?: boolean;
+}
+```
+
+## Common Issues
+
+### Hotkey Not Working
+
+```tsx
+// ❌ Problem: Hotkey not triggering
+useHotKey("ctrl+s", saveAction); // Wrong format
+
+// ✅ Solution: Use proper configuration
+useHotKey({ key: "s", modifiers: ["ctrl"] }, saveAction);
+
+// ❌ Problem: Disabled by accident
+useHotKey("Enter", action, { enabled: false });
+
+// ✅ Solution: Check enabled state
+useHotKey("Enter", action, { enabled: true });
+```
+
+### Conflicts with Browser Shortcuts
+
+```tsx
+// ❌ Problem: Browser handles the shortcut first
+useHotKey({ key: "t", modifiers: ["ctrl"] }, newTab);
+
+// ✅ Solution: Prevent default behavior
+useHotKey(
+  { key: "t", modifiers: ["ctrl"], preventDefault: true },
+  customAction
+);
+```
+
+### Input Field Conflicts
+
+```tsx
+// ❌ Problem: Hotkey triggers while typing
+useHotKey("Enter", submitForm); // Might interfere with form submission
+
+// ✅ Solution: Use modifier or configure properly
+useHotKey({ key: "Enter", modifiers: ["ctrl"] }, submitForm);
+
+// ✅ Alternative: Disable input field detection if needed
+useHotKey("Enter", submitForm, { ignoreInputFields: false });
+```
+
+### Memory Leaks
+
+```tsx
+// ✅ Good: Hook automatically cleans up
+useHotKey(
+  "s",
+  useCallback(
+    () => {
+      saveDocument();
+    },
+    [
+      /* stable dependencies */
+    ]
+  )
+);
+
+// ⚠️ Potential issue: Unstable callback
+useHotKey("s", () => {
+  // This creates a new function on every render
+  saveDocument(currentData);
+});
+
+// ✅ Solution: Use useCallback with proper dependencies
+useHotKey(
+  "s",
+  useCallback(() => {
+    saveDocument(currentData);
+  }, [currentData])
+);
+```
+
+### Target Element Issues
+
+```tsx
+// ❌ Problem: Ref not ready on first render
+const ref = useRef<HTMLDivElement>(null);
+useHotKey("Enter", action, { target: ref.current }); // null on first render
+
+// ✅ Solution: Handle null target gracefully
+useHotKey("Enter", action, {
+  target: ref.current || document,
+  enabled: !!ref.current,
+});
+```
+
+## Advanced Usage
+
+### Dynamic Hotkey Configuration
+
+```tsx
+function ConfigurableShortcuts() {
+  const [shortcuts, setShortcuts] = useState({
+    save: { key: "s", modifiers: ["ctrl"] },
+    copy: { key: "c", modifiers: ["ctrl"] },
+    paste: { key: "v", modifiers: ["ctrl"] },
+  });
+
+  useHotKey(shortcuts.save, saveAction);
+  useHotKey(shortcuts.copy, copyAction);
+  useHotKey(shortcuts.paste, pasteAction);
+
+  return (
+    <div>
+      <h3>Configurable Shortcuts</h3>
+      {/* UI to modify shortcuts */}
+    </div>
+  );
+}
+```
+
+### Conditional Hotkey Loading
+
+```tsx
+function ConditionalHotkeys({ userRole }: { userRole: string }) {
+  // Admin shortcuts
+  useHotKey({ key: "d", modifiers: ["ctrl", "shift"] }, openDebugPanel, {
+    enabled: userRole === "admin",
+  });
+
+  // Editor shortcuts
+  useHotKey({ key: "e", modifiers: ["ctrl"] }, toggleEditMode, {
+    enabled: ["admin", "editor"].includes(userRole),
+  });
+
+  // User shortcuts (always enabled)
+  useHotKey({ key: "h", modifiers: ["ctrl"] }, showHelp);
+}
+```
+
+### Hotkey Chaining
+
+```tsx
+function ChainedHotkeys() {
+  const [sequence, setSequence] = useState<string[]>([]);
+
+  useHotKey("g", () => {
+    setSequence(["g"]);
+    // Clear sequence after timeout
+    setTimeout(() => setSequence([]), 2000);
+  });
+
+  useHotKey("h", () => {
+    if (sequence.includes("g")) {
+      goHome(); // 'g' then 'h' = go home
+      setSequence([]);
+    }
+  });
+
+  useHotKey("i", () => {
+    if (sequence.includes("g")) {
+      goToInbox(); // 'g' then 'i' = go to inbox
+      setSequence([]);
+    }
+  });
+
+  return (
+    <div>
+      <p>Sequence: {sequence.join(" → ")}</p>
+      <p>Try: 'g' then 'h' (go home) or 'g' then 'i' (go to inbox)</p>
+    </div>
+  );
+}
+```
+
+### Multiple Hook Instances
+
+```tsx
+function MultiContextHotkeys() {
+  const [mode, setMode] = useState<"view" | "edit" | "game">("view");
+
+  // View mode shortcuts
+  useHotKey("n", nextItem, { enabled: mode === "view" });
+  useHotKey("p", previousItem, { enabled: mode === "view" });
+
+  // Edit mode shortcuts
+  useHotKey({ key: "s", modifiers: ["ctrl"] }, save, {
+    enabled: mode === "edit",
+  });
+  useHotKey("Escape", () => setMode("view"), { enabled: mode === "edit" });
+
+  // Game mode shortcuts
+  useHotKey("w", moveUp, { enabled: mode === "game" });
+  useHotKey("s", moveDown, { enabled: mode === "game" });
+  useHotKey("a", moveLeft, { enabled: mode === "game" });
+  useHotKey("d", moveRight, { enabled: mode === "game" });
+
+  return (
+    <div>
+      <div>Current mode: {mode}</div>
+      <button onClick={() => setMode("view")}>View Mode</button>
+      <button onClick={() => setMode("edit")}>Edit Mode</button>
+      <button onClick={() => setMode("game")}>Game Mode</button>
+    </div>
+  );
+}
+```

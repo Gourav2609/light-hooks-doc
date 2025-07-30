@@ -1,0 +1,952 @@
+---
+title: usePing
+description: A React hook for monitoring network connectivity and measuring latency to specific URLs with real-time ping functionality and automatic or manual operation modes.
+---
+
+The `usePing` hook provides a comprehensive solution for network connectivity monitoring in React applications. It measures latency to specific endpoints, monitors connection status, and offers both automatic and manual ping capabilities for real-time network health monitoring.
+
+## Basic Usage
+
+### Simple URL Monitoring
+
+```tsx
+import { usePing } from "light-hooks";
+
+function NetworkStatus() {
+  const { latency, isLive } = usePing("https://api.example.com");
+
+  return (
+    <div>
+      <h2>Network Status</h2>
+      <p>Status: {isLive ? "🟢 Online" : "🔴 Offline"}</p>
+      <p>Latency: {latency}ms</p>
+    </div>
+  );
+}
+```
+
+### Advanced Configuration
+
+```tsx
+function CustomPingMonitor() {
+  const { ping, latency, isLive, isLoading, lastPingTime } = usePing({
+    url: "https://api.example.com",
+    interval: 3000, // Ping every 3 seconds
+    fallbackLatency: 999, // Show 999ms when offline
+    autoStart: false, // Manual mode
+  });
+
+  return (
+    <div>
+      <h2>API Health Monitor</h2>
+      <div>
+        <span>Status: {isLive ? "🟢 Live" : "🔴 Down"}</span>
+        <span>Latency: {latency}ms</span>
+        {isLoading && <span>⏳ Pinging...</span>}
+      </div>
+      <p>Last ping: {lastPingTime?.toLocaleTimeString() || "Never"}</p>
+      <button onClick={ping} disabled={isLoading}>
+        {isLoading ? "Pinging..." : "Ping Now"}
+      </button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+The hook accepts either a string URL or a configuration object:
+
+| Type          | Description                             | Example                        |
+| ------------- | --------------------------------------- | ------------------------------ |
+| `string`      | Simple URL to ping with default options | `usePing("https://api.com")`   |
+| `PingOptions` | Full configuration object               | `usePing({ url: "...", ... })` |
+
+### PingOptions Interface
+
+| Property          | Type      | Default | Description                                      |
+| ----------------- | --------- | ------- | ------------------------------------------------ |
+| `url`             | `string`  | -       | The URL to ping for latency measurement          |
+| `interval`        | `number`  | `5000`  | Interval between automatic pings in milliseconds |
+| `fallbackLatency` | `number`  | `0`     | Latency value when endpoint is unreachable       |
+| `autoStart`       | `boolean` | `true`  | Whether to start pinging automatically           |
+
+### Return Value
+
+Returns a `PingResult` object with:
+
+| Property       | Type             | Description                                     |
+| -------------- | ---------------- | ----------------------------------------------- |
+| `ping`         | `() => void`     | Manual function to trigger a ping immediately   |
+| `latency`      | `number`         | Current latency in milliseconds                 |
+| `isLive`       | `boolean`        | Whether the endpoint is currently reachable     |
+| `isLoading`    | `boolean`        | Whether a ping request is currently in progress |
+| `lastPingTime` | `Date \| null`   | Timestamp of last ping attempt                  |
+
+## Examples
+
+### API Health Dashboard
+
+```tsx
+function APIHealthDashboard() {
+  const apis = [
+    { name: "Main API", url: "https://api.example.com" },
+    { name: "Auth Service", url: "https://auth.example.com" },
+    { name: "CDN", url: "https://cdn.example.com" },
+    { name: "Database", url: "https://db.example.com" },
+  ];
+
+  return (
+    <div className="health-dashboard">
+      <h2>Service Health Dashboard</h2>
+      <div className="services-grid">
+        {apis.map((api) => (
+          <ServiceCard key={api.name} name={api.name} url={api.url} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServiceCard({ name, url }: { name: string; url: string }) {
+  const { latency, isLive, isLoading, lastPingTime } = usePing({
+    url,
+    interval: 10000, // Check every 10 seconds
+    fallbackLatency: 9999,
+  });
+
+  const getStatusColor = () => {
+    if (isLoading) return "yellow";
+    if (!isLive) return "red";
+    if (latency < 100) return "green";
+    if (latency < 300) return "orange";
+    return "red";
+  };
+
+  return (
+    <div className={`service-card ${getStatusColor()}`}>
+      <h3>{name}</h3>
+      <div className="metrics">
+        <span>Status: {isLive ? "🟢" : "🔴"}</span>
+        <span>Latency: {latency}ms</span>
+        <span>Last check: {lastPingTime?.toLocaleTimeString()}</span>
+      </div>
+      {isLoading && <div className="loading">Checking...</div>}
+    </div>
+  );
+}
+```
+
+### Connection Quality Indicator
+
+```tsx
+function ConnectionQuality() {
+  const { latency, isLive, isLoading } = usePing({
+    url: "https://www.google.com",
+    interval: 2000,
+    fallbackLatency: 9999,
+  });
+
+  const getQualityLevel = () => {
+    if (!isLive) return { level: "No Connection", color: "red", bars: 0 };
+    if (latency < 50) return { level: "Excellent", color: "green", bars: 4 };
+    if (latency < 100) return { level: "Good", color: "lightgreen", bars: 3 };
+    if (latency < 200) return { level: "Fair", color: "orange", bars: 2 };
+    if (latency < 500) return { level: "Poor", color: "darkorange", bars: 1 };
+    return { level: "Very Poor", color: "red", bars: 1 };
+  };
+
+  const quality = getQualityLevel();
+
+  return (
+    <div className="connection-indicator">
+      <div className="signal-bars">
+        {[1, 2, 3, 4].map((bar) => (
+          <div
+            key={bar}
+            className={`bar ${bar <= quality.bars ? "active" : ""}`}
+            style={{
+              backgroundColor: bar <= quality.bars ? quality.color : "gray",
+            }}
+          />
+        ))}
+      </div>
+      <div className="quality-info">
+        <span>{quality.level}</span>
+        <span>{latency}ms</span>
+        {isLoading && <span>⏳</span>}
+      </div>
+    </div>
+  );
+}
+```
+
+### Manual Ping Tool
+
+```tsx
+function PingTool() {
+  const [targetUrl, setTargetUrl] = useState("https://www.google.com");
+  const [pingHistory, setPingHistory] = useState<
+    Array<{
+      timestamp: Date;
+      latency: number;
+      success: boolean;
+    }>
+  >([]);
+
+  const { ping, latency, isLive, isLoading, lastPingTime } = usePing({
+    url: targetUrl,
+    autoStart: false,
+    fallbackLatency: -1,
+  });
+
+  // Track ping history
+  useEffect(() => {
+    if (lastPingTime) {
+      setPingHistory((prev) => [
+        ...prev.slice(-19), // Keep last 20 pings
+        {
+          timestamp: lastPingTime,
+          latency,
+          success: isLive,
+        },
+      ]);
+    }
+  }, [lastPingTime, latency, isLive]);
+
+  const handleUrlChange = (newUrl: string) => {
+    setTargetUrl(newUrl);
+    setPingHistory([]); // Clear history when URL changes
+  };
+
+  const averageLatency =
+    pingHistory.length > 0
+      ? Math.round(
+          pingHistory
+            .filter((p) => p.success)
+            .reduce((sum, p) => sum + p.latency, 0) /
+            pingHistory.filter((p) => p.success).length
+        )
+      : 0;
+
+  return (
+    <div className="ping-tool">
+      <h2>Network Ping Tool</h2>
+
+      <div className="url-input">
+        <input
+          type="url"
+          value={targetUrl}
+          onChange={(e) => handleUrlChange(e.target.value)}
+          placeholder="Enter URL to ping"
+        />
+        <button onClick={ping} disabled={isLoading}>
+          {isLoading ? "Pinging..." : "Ping"}
+        </button>
+      </div>
+
+      <div className="current-status">
+        <h3>Current Status</h3>
+        <p>URL: {targetUrl}</p>
+        <p>Status: {isLive ? "🟢 Reachable" : "🔴 Unreachable"}</p>
+        <p>Last Latency: {latency === -1 ? "Failed" : `${latency}ms`}</p>
+        <p>
+          Average Latency: {averageLatency > 0 ? `${averageLatency}ms` : "N/A"}
+        </p>
+        <p>Last Ping: {lastPingTime?.toLocaleString() || "Never"}</p>
+      </div>
+
+      <div className="ping-history">
+        <h3>Ping History ({pingHistory.length}/20)</h3>
+        <div className="history-list">
+          {pingHistory
+            .slice()
+            .reverse()
+            .map((ping, index) => (
+              <div
+                key={index}
+                className={`ping-entry ${ping.success ? "success" : "failed"}`}
+              >
+                <span>{ping.timestamp.toLocaleTimeString()}</span>
+                <span>{ping.success ? `${ping.latency}ms` : "Failed"}</span>
+                <span>{ping.success ? "✅" : "❌"}</span>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Real-time Network Monitor
+
+```tsx
+function NetworkMonitor() {
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [alerts, setAlerts] = useState<string[]>([]);
+
+  const { latency, isLive, lastPingTime } = usePing({
+    url: "https://www.cloudflare.com",
+    interval: 1000, // Check every second
+    autoStart: isMonitoring,
+    fallbackLatency: 9999,
+  });
+
+  // Monitor for connection issues
+  useEffect(() => {
+    if (!isMonitoring) return;
+
+    if (!isLive) {
+      setAlerts((prev) => [
+        ...prev,
+        `${new Date().toLocaleTimeString()}: Connection lost`,
+      ]);
+    } else if (latency > 1000) {
+      setAlerts((prev) => [
+        ...prev,
+        `${new Date().toLocaleTimeString()}: High latency detected (${latency}ms)`,
+      ]);
+    }
+  }, [isLive, latency, isMonitoring]);
+
+  const clearAlerts = () => setAlerts([]);
+
+  return (
+    <div className="network-monitor">
+      <h2>Real-time Network Monitor</h2>
+
+      <div className="monitor-controls">
+        <button
+          onClick={() => setIsMonitoring(!isMonitoring)}
+          className={isMonitoring ? "stop" : "start"}
+        >
+          {isMonitoring ? "Stop Monitoring" : "Start Monitoring"}
+        </button>
+        <button onClick={clearAlerts}>Clear Alerts</button>
+      </div>
+
+      <div className="status-display">
+        <div className={`status-indicator ${isLive ? "online" : "offline"}`}>
+          <h3>{isLive ? "🟢 Online" : "🔴 Offline"}</h3>
+          <p>Latency: {latency}ms</p>
+          <p>Last Check: {lastPingTime?.toLocaleTimeString() || "Never"}</p>
+        </div>
+      </div>
+
+      <div className="alerts-section">
+        <h3>Alerts ({alerts.length})</h3>
+        <div className="alerts-list">
+          {alerts
+            .slice(-10)
+            .reverse()
+            .map((alert, index) => (
+              <div key={index} className="alert-item">
+                {alert}
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Multi-Region Latency Comparison
+
+```tsx
+function RegionLatencyComparison() {
+  const regions = [
+    { name: "US East", url: "https://us-east.example.com" },
+    { name: "US West", url: "https://us-west.example.com" },
+    { name: "Europe", url: "https://eu.example.com" },
+    { name: "Asia", url: "https://asia.example.com" },
+  ];
+
+  const RegionStatus = ({ name, url }: { name: string; url: string }) => {
+    const { latency, isLive, isLoading } = usePing({
+      url,
+      interval: 5000,
+      fallbackLatency: 9999,
+    });
+
+    return (
+      <div className="region-status">
+        <h4>{name}</h4>
+        <div className={`status ${isLive ? "live" : "down"}`}>
+          {isLoading ? "⏳" : isLive ? "🟢" : "🔴"}
+          <span>{latency}ms</span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="region-comparison">
+      <h2>Global Latency Comparison</h2>
+      <div className="regions-grid">
+        {regions.map((region) => (
+          <RegionStatus key={region.name} {...region} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Gaming Connection Monitor
+
+```tsx
+function GamingConnectionMonitor() {
+  const gameServers = [
+    { name: "NA Server", url: "https://na.gameserver.com" },
+    { name: "EU Server", url: "https://eu.gameserver.com" },
+    { name: "Asia Server", url: "https://asia.gameserver.com" },
+  ];
+
+  const ServerPing = ({ name, url }: { name: string; url: string }) => {
+    const { latency, isLive, ping, isLoading } = usePing({
+      url,
+      interval: 3000,
+      autoStart: true,
+      fallbackLatency: 999,
+    });
+
+    const getPingQuality = (ping: number) => {
+      if (!isLive) return { quality: "Offline", color: "red" };
+      if (ping < 30) return { quality: "Excellent", color: "green" };
+      if (ping < 60) return { quality: "Good", color: "lightgreen" };
+      if (ping < 100) return { quality: "Fair", color: "yellow" };
+      if (ping < 150) return { quality: "Poor", color: "orange" };
+      return { quality: "Very Poor", color: "red" };
+    };
+
+    const quality = getPingQuality(latency);
+
+    return (
+      <div className="server-ping">
+        <div className="server-header">
+          <h3>{name}</h3>
+          <button onClick={ping} disabled={isLoading}>
+            {isLoading ? "⏳" : "🔄"}
+          </button>
+        </div>
+        <div className="ping-display">
+          <span className="latency" style={{ color: quality.color }}>
+            {latency}ms
+          </span>
+          <span className="quality">{quality.quality}</span>
+        </div>
+        <div className="status-bar">
+          <div
+            className="status-fill"
+            style={{
+              width: isLive ? `${Math.max(10, 100 - latency / 2)}%` : "0%",
+              backgroundColor: quality.color,
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="gaming-monitor">
+      <h2>Gaming Server Monitor</h2>
+      <p>Choose your server based on connection quality</p>
+      <div className="servers-list">
+        {gameServers.map((server) => (
+          <ServerPing key={server.name} {...server} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Auto-Retry with Exponential Backoff
+
+```tsx
+function ReliablePingMonitor() {
+  const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(5);
+
+  const { ping, latency, isLive, isLoading, lastPingTime } = usePing({
+    url: "https://api.critical-service.com",
+    autoStart: false,
+    fallbackLatency: -1,
+  });
+
+  // Auto-retry with exponential backoff when connection fails
+  useEffect(() => {
+    if (!isLive && lastPingTime && retryCount < maxRetries) {
+      const backoffDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s, 8s, 16s
+
+      const timer = setTimeout(() => {
+        setRetryCount((prev) => prev + 1);
+        ping();
+      }, backoffDelay);
+
+      return () => clearTimeout(timer);
+    } else if (isLive) {
+      setRetryCount(0); // Reset retry count on successful connection
+    }
+  }, [isLive, lastPingTime, retryCount, maxRetries, ping]);
+
+  const handleManualPing = () => {
+    setRetryCount(0);
+    ping();
+  };
+
+  return (
+    <div className="reliable-monitor">
+      <h2>Critical Service Monitor</h2>
+
+      <div className="status-section">
+        <h3>Connection Status</h3>
+        <p>Status: {isLive ? "🟢 Connected" : "🔴 Disconnected"}</p>
+        <p>Latency: {latency === -1 ? "N/A" : `${latency}ms`}</p>
+        <p>Last Attempt: {lastPingTime?.toLocaleTimeString() || "Never"}</p>
+      </div>
+
+      {!isLive && retryCount > 0 && (
+        <div className="retry-section">
+          <h3>Auto-Retry Status</h3>
+          <p>
+            Retry Attempt: {retryCount}/{maxRetries}
+          </p>
+          <p>Next retry in: {Math.pow(2, retryCount)}s</p>
+          {isLoading && <p>⏳ Attempting to reconnect...</p>}
+        </div>
+      )}
+
+      <div className="controls">
+        <button onClick={handleManualPing} disabled={isLoading}>
+          {isLoading ? "Pinging..." : "Manual Ping"}
+        </button>
+        {retryCount >= maxRetries && !isLive && (
+          <p className="max-retries">
+            Max retries reached. Check your connection.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Choose Appropriate Intervals
+
+```tsx
+// ✅ Good: Reasonable intervals based on use case
+const healthCheck = usePing({
+  url: "https://api.example.com",
+  interval: 30000, // 30 seconds for health monitoring
+});
+
+const realtimeMonitor = usePing({
+  url: "https://gaming-server.com",
+  interval: 1000, // 1 second for gaming/real-time apps
+});
+
+// ❌ Avoid: Too frequent pings that waste bandwidth
+const wasteful = usePing({
+  url: "https://api.example.com",
+  interval: 100, // 100ms is too frequent for most use cases
+});
+```
+
+### 2. Handle Failed States Gracefully
+
+```tsx
+// ✅ Good: Provide meaningful fallback values and UI
+const { latency, isLive } = usePing({
+  url: "https://api.example.com",
+  fallbackLatency: 9999, // Clear indication of failure
+  interval: 5000,
+});
+
+return (
+  <div>
+    <span>Status: {isLive ? "Online" : "Offline"}</span>
+    <span>Latency: {isLive ? `${latency}ms` : "Unable to connect"}</span>
+  </div>
+);
+
+// ❌ Avoid: Confusing failure states
+const bad = usePing({
+  url: "https://api.example.com",
+  fallbackLatency: 0, // Misleading - 0ms suggests perfect connection
+});
+```
+
+### 3. Use Manual Mode for User-Controlled Pinging
+
+```tsx
+// ✅ Good: Manual mode for user-initiated actions
+function PingButton() {
+  const { ping, latency, isLoading } = usePing({
+    url: "https://api.example.com",
+    autoStart: false, // Let user control when to ping
+  });
+
+  return (
+    <button onClick={ping} disabled={isLoading}>
+      {isLoading ? "Pinging..." : `Ping API (${latency}ms)`}
+    </button>
+  );
+}
+
+// ✅ Good: Auto mode for continuous monitoring
+function StatusIndicator() {
+  const { isLive, latency } = usePing({
+    url: "https://api.example.com",
+    autoStart: true,
+    interval: 10000,
+  });
+
+  return <div>Status: {isLive ? `Online (${latency}ms)` : "Offline"}</div>;
+}
+```
+
+### 4. Optimize for Performance
+
+```tsx
+// ✅ Good: Use HEAD requests (default) for minimal data transfer
+const efficient = usePing("https://api.example.com");
+
+// ✅ Good: Adjust intervals based on importance
+const critical = usePing({
+  url: "https://critical-api.com",
+  interval: 5000, // More frequent for critical services
+});
+
+const nonCritical = usePing({
+  url: "https://cdn.example.com",
+  interval: 30000, // Less frequent for non-critical services
+});
+```
+
+### 5. Provide Visual Feedback
+
+```tsx
+// ✅ Good: Clear visual indicators
+function ConnectionStatus() {
+  const { latency, isLive, isLoading } = usePing("https://api.example.com");
+
+  const getStatusColor = () => {
+    if (isLoading) return "yellow";
+    if (!isLive) return "red";
+    if (latency < 100) return "green";
+    return "orange";
+  };
+
+  return (
+    <div style={{ backgroundColor: getStatusColor() }}>
+      {isLoading ? "⏳ Checking..." : isLive ? `🟢 ${latency}ms` : "🔴 Offline"}
+    </div>
+  );
+}
+```
+
+### 6. Handle URL Changes Properly
+
+```tsx
+// ✅ Good: Reset state when URL changes
+function DynamicPing({ url }: { url: string }) {
+  const { latency, isLive, lastPingTime } = usePing({
+    url,
+    interval: 5000,
+  });
+
+  // The hook automatically handles URL changes
+  return (
+    <div>
+      <p>Monitoring: {url}</p>
+      <p>Status: {isLive ? `Online (${latency}ms)` : "Offline"}</p>
+      <p>Last check: {lastPingTime?.toLocaleTimeString()}</p>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+The hook is fully typed with comprehensive interfaces:
+
+```tsx
+import { usePing, PingOptions, PingResult } from "light-hooks";
+
+// Type inference works automatically
+const pingResult = usePing("https://api.example.com");
+// pingResult: PingResult
+
+// Explicit typing (optional)
+const options: PingOptions = {
+  url: "https://api.example.com",
+  interval: 5000,
+  fallbackLatency: 999,
+  autoStart: true,
+};
+
+const result: PingResult = usePing(options);
+
+// Custom component with typed props
+interface NetworkStatusProps {
+  endpoint: string;
+  refreshInterval?: number;
+  onStatusChange?: (isLive: boolean) => void;
+}
+
+function NetworkStatus({
+  endpoint,
+  refreshInterval = 5000,
+  onStatusChange,
+}: NetworkStatusProps) {
+  const { latency, isLive, isLoading } = usePing({
+    url: endpoint,
+    interval: refreshInterval,
+  });
+
+  useEffect(() => {
+    onStatusChange?.(isLive);
+  }, [isLive, onStatusChange]);
+
+  return (
+    <div>
+      <span>Latency: {latency}ms</span>
+      <span>Status: {isLive ? "Online" : "Offline"}</span>
+      {isLoading && <span>Loading...</span>}
+    </div>
+  );
+}
+```
+
+### Interface Definitions
+
+```tsx
+interface PingOptions {
+  url: string;
+  interval?: number;
+  fallbackLatency?: number;
+  autoStart?: boolean;
+}
+
+interface PingResult {
+  ping: () => void;
+  latency: number;
+  isLive: boolean;
+  isLoading: boolean;
+  lastPingTime: Date | null;
+}
+```
+
+## Common Issues
+
+### CORS and Network Limitations
+
+```tsx
+// ❌ Problem: CORS errors with some URLs
+const { isLive } = usePing("https://restricted-api.com");
+
+// ✅ Solution: Use publicly accessible endpoints for connectivity testing
+const { isLive } = usePing("https://www.google.com");
+
+// ✅ Alternative: Use your own API endpoint
+const { isLive } = usePing("https://your-api.com/health");
+```
+
+### Performance Impact
+
+```tsx
+// ❌ Problem: Too frequent pings affecting performance
+const heavyPing = usePing({
+  url: "https://api.example.com",
+  interval: 100, // Too frequent
+});
+
+// ✅ Solution: Use appropriate intervals
+const optimizedPing = usePing({
+  url: "https://api.example.com",
+  interval: 5000, // Reasonable frequency
+});
+```
+
+### Memory Leaks
+
+```tsx
+// ✅ Good: Hook automatically cleans up intervals
+function Component() {
+  const { latency } = usePing("https://api.example.com");
+  // Cleanup happens automatically when component unmounts
+  return <div>{latency}ms</div>;
+}
+
+// ⚠️ Be careful with: Dynamic URLs that change frequently
+function DynamicComponent({ urls }: { urls: string[] }) {
+  return (
+    <div>
+      {urls.map((url) => (
+        <PingComponent key={url} url={url} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Handling Network Errors
+
+```tsx
+// ✅ Good: Use fallback values and proper error handling
+const { latency, isLive } = usePing({
+  url: "https://api.example.com",
+  fallbackLatency: 9999, // Clear error indicator
+  interval: 5000,
+});
+
+// Display appropriate messages
+return (
+  <div>
+    {isLive ? (
+      <span>Connected ({latency}ms)</span>
+    ) : (
+      <span>Connection failed - please check your network</span>
+    )}
+  </div>
+);
+```
+
+## Advanced Usage
+
+### Custom Ping Logic with Retry
+
+```tsx
+function AdvancedPingMonitor() {
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+  const [alertThreshold] = useState(3);
+
+  const { isLive, latency, lastPingTime } = usePing({
+    url: "https://critical-service.com",
+    interval: 5000,
+  });
+
+  useEffect(() => {
+    if (!isLive) {
+      setConsecutiveFailures((prev) => prev + 1);
+    } else {
+      setConsecutiveFailures(0);
+    }
+  }, [isLive, lastPingTime]);
+
+  const isAlert = consecutiveFailures >= alertThreshold;
+
+  return (
+    <div className={`monitor ${isAlert ? "alert" : ""}`}>
+      <h3>Critical Service Monitor</h3>
+      <p>Status: {isLive ? "✅ Online" : "❌ Offline"}</p>
+      <p>Latency: {latency}ms</p>
+      <p>Consecutive failures: {consecutiveFailures}</p>
+      {isAlert && (
+        <div className="alert-message">
+          🚨 Service has been down for {consecutiveFailures} consecutive checks!
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Bandwidth-Aware Monitoring
+
+```tsx
+function BandwidthAwarePing() {
+  const [connectionType, setConnectionType] = useState<string>("unknown");
+
+  useEffect(() => {
+    // Detect connection type if available
+    const connection = (navigator as any).connection;
+    if (connection) {
+      setConnectionType(connection.effectiveType);
+    }
+  }, []);
+
+  // Adjust ping interval based on connection type
+  const getInterval = () => {
+    switch (connectionType) {
+      case "slow-2g":
+      case "2g":
+        return 30000; // 30 seconds for slow connections
+      case "3g":
+        return 10000; // 10 seconds for 3G
+      case "4g":
+        return 5000; // 5 seconds for 4G
+      default:
+        return 5000; // Default 5 seconds
+    }
+  };
+
+  const { latency, isLive } = usePing({
+    url: "https://api.example.com",
+    interval: getInterval(),
+  });
+
+  return (
+    <div>
+      <h3>Adaptive Network Monitor</h3>
+      <p>Connection Type: {connectionType}</p>
+      <p>Ping Interval: {getInterval() / 1000}s</p>
+      <p>Status: {isLive ? `Online (${latency}ms)` : "Offline"}</p>
+    </div>
+  );
+}
+```
+
+### Multiple Endpoint Failover
+
+```tsx
+function FailoverMonitor() {
+  const endpoints = [
+    "https://primary-api.com",
+    "https://secondary-api.com",
+    "https://backup-api.com",
+  ];
+
+  const [activeEndpoint, setActiveEndpoint] = useState(0);
+
+  const primary = usePing({ url: endpoints[0], interval: 5000 });
+  const secondary = usePing({ url: endpoints[1], interval: 10000 });
+  const backup = usePing({ url: endpoints[2], interval: 15000 });
+
+  const pingResults = [primary, secondary, backup];
+
+  useEffect(() => {
+    // Auto-failover logic
+    const healthyEndpoint = pingResults.findIndex((result) => result.isLive);
+    if (healthyEndpoint !== -1 && healthyEndpoint !== activeEndpoint) {
+      setActiveEndpoint(healthyEndpoint);
+    }
+  }, [primary.isLive, secondary.isLive, backup.isLive]);
+
+  return (
+    <div className="failover-monitor">
+      <h3>Failover Monitor</h3>
+      <p>Active Endpoint: {endpoints[activeEndpoint]}</p>
+
+      {endpoints.map((endpoint, index) => (
+        <div
+          key={endpoint}
+          className={`endpoint ${index === activeEndpoint ? "active" : ""}`}
+        >
+          <span>{endpoint}</span>
+          <span>{pingResults[index].isLive ? "🟢" : "🔴"}</span>
+          <span>{pingResults[index].latency}ms</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```

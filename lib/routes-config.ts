@@ -28,10 +28,11 @@ export const ROUTES: EachRoute[] = [
         title: "Hooks",
         href: "/hooks",
         items: [
+          { title: "useHotkey", href: "/use-hotkey" },
           { title: "useCountdown", href: "/use-countdown" },
+          { title: "usePing", href: "/use-ping" },
           { title: "useClickOutside", href: "/use-click-outside" },
           { title: "isMobile", href: "/is-mobile" },
-          { title: "usePing", href: "/use-ping" },
         ],
       },
       { title: "Contributing", href: "/contributing" },
