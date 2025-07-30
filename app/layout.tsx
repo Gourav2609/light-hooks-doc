@@ -34,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="algolia-site-verification" content="A343AA9A93FF47F6" />
         <link
           rel="stylesheet"
           type="text/css"
