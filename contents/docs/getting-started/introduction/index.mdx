@@ -9,8 +9,11 @@ Welcome to **Light Hooks Documentation**! This is the comprehensive guide for li
 
 Light Hooks is proudly **open-source**! 🎉 We believe in creating accessible, performant, and easy-to-use React hooks that help developers build better applications faster.
 
-<Note title="Get Started"> 
- Ready to enhance your React app? Install light-hooks with `npm install light-hooks` and explore our [GitHub repository](https://github.com/Gourav2609/light-hooks) for the latest updates and contributions!
+<Note title="Get Started">
+  Ready to enhance your React app? Install light-hooks with `npm install
+  light-hooks` and explore our [GitHub
+  repository](https://github.com/Gourav2609/light-hooks) for the latest updates
+  and contributions!
 </Note>
 
 ## Why Light Hooks?
@@ -25,19 +28,13 @@ Light Hooks is proudly **open-source**! 🎉 We believe in creating accessible, 
 
 ### Available Hooks
 
-| **Hook**                     | **Description**                                          |
-|------------------------------|----------------------------------------------------------|
-| useLocalStorage              | Sync state with localStorage automatically.              |
-| useSessionStorage            | Manage sessionStorage with React state.                  |
-| useToggle                    | Simple boolean toggle with optional value.               |
-| useCounter                   | Counter with increment, decrement, and reset.            |
-| useDebounce                  | Debounce values for performance optimization.            |
-| useThrottle                  | Throttle function calls for better performance.          |
-| usePrevious                  | Access the previous value of a state or prop.            |
-| useUpdateEffect              | useEffect that skips the first render.                   |
-| useInterval                  | Declarative setInterval with easy cleanup.               |
-| useTimeout                   | Declarative setTimeout with automatic cleanup.           |
-
+| **Hook**        | **Description**                                    |
+| --------------- | -------------------------------------------------- |
+| useClickOutside | Detect clicks outside specific elements.           |
+| useCountdown    | Timer management with start/pause/reset controls.  |
+| useHotKey       | Handle keyboard shortcuts and hotkey combinations. |
+| isMobile        | Device detection for responsive behavior.          |
+| usePing         | Monitor network connectivity and measure latency.  |
 
 ## Installation & Usage
 
@@ -56,27 +53,40 @@ Install light-hooks in your React project:
 npm install light-hooks
 # or
 yarn add light-hooks
-# or  
+# or
 pnpm add light-hooks
 ```
 
 Start using hooks immediately:
 
 ```tsx
-import { useLocalStorage, useToggle } from 'light-hooks';
+import { useCountdown, usePing, useClickOutside, isMobile } from "light-hooks";
 
 function MyComponent() {
-  const [theme, setTheme] = useLocalStorage('theme', 'light');
-  const [isOpen, toggle] = useToggle(false);
-  
+  const { timeLeft, start, pause, isActive } = useCountdown(60);
+  const { latency, isLive } = usePing("https://api.example.com");
+  const modalRef = useRef(null);
+  const mobile = isMobile();
+
+  useClickOutside(modalRef, () => {
+    console.log("Clicked outside modal");
+  });
+
   return (
     <div>
-      <button onClick={toggle}>
-        {isOpen ? 'Close' : 'Open'}
-      </button>
-      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-        Switch to {theme === 'light' ? 'dark' : 'light'} theme
-      </button>
+      <div>
+        <h3>Timer: {timeLeft}s</h3>
+        <button onClick={isActive ? pause : start}>
+          {isActive ? "Pause" : "Start"}
+        </button>
+      </div>
+      <div>
+        <h3>Network Status</h3>
+        <p>API: {isLive ? `Online (${latency}ms)` : "Offline"}</p>
+      </div>
+      <div ref={modalRef} className={mobile ? "mobile-view" : "desktop-view"}>
+        <p>Device: {mobile ? "Mobile" : "Desktop"}</p>
+      </div>
     </div>
   );
 }
@@ -86,8 +96,8 @@ function MyComponent() {
 
 Get started with light-hooks from npm:
 
-| Package Manager              | Command                                                                                  |
-|-----------------------------|------------------------------------------------------------------------------------------|
-| npm                          | `npm install light-hooks`                                                               |
-| yarn                         | `yarn add light-hooks`                                                                   |
-| pnpm                         | `pnpm add light-hooks`                                                                   |
+| Package Manager | Command                   |
+| --------------- | ------------------------- |
+| npm             | `npm install light-hooks` |
+| yarn            | `yarn add light-hooks`    |
+| pnpm            | `pnpm add light-hooks`    |

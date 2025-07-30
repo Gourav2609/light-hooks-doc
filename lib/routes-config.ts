@@ -20,23 +20,7 @@ export const ROUTES: EachRoute[] = [
         href: "/installation",
       },
       { title: "Quick Start Guide", href: "/quick-start-guide" },
-      {
-        title: "Hook Categories",
-        href: "/hook-categories",
-      },
-      {
-        title: "Hooks",
-        href: "/hooks",
-        items: [
-          { title: "useHotkey", href: "/use-hotkey" },
-          { title: "useCountdown", href: "/use-countdown" },
-          { title: "usePing", href: "/use-ping" },
-          { title: "useClickOutside", href: "/use-click-outside" },
-          { title: "isMobile", href: "/is-mobile" },
-        ],
-      },
-      { title: "Contributing", href: "/contributing" },
-      { title: "FAQ", href: "/faq" }
+
       // { title: "Algolia Search", href: "/algolia-search"},
       // { title: "Themes", href: "/themes" },
       // {
@@ -45,6 +29,23 @@ export const ROUTES: EachRoute[] = [
       // },
     ],
   },
+  {
+    title: "Hook Categories",
+    href: "/hook-categories",
+  },
+  {
+    title: "Hooks",
+    href: "/hooks",
+    items: [
+      { title: "useHotkey", href: "/use-hotkey" },
+      { title: "useCountdown", href: "/use-countdown" },
+      { title: "usePing", href: "/use-ping" },
+      { title: "useClickOutside", href: "/use-click-outside" },
+      { title: "isMobile", href: "/is-mobile" },
+    ],
+  },
+  { title: "Contributing", href: "/contributing" },
+  { title: "FAQ", href: "/faq" },
 ];
 
 type Page = { title: string; href: string };
