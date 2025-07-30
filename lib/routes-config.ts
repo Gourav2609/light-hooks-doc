@@ -35,13 +35,13 @@ export const ROUTES: EachRoute[] = [
         ],
       },
       { title: "Contributing", href: "/contributing" },
-      { title: "FAQ", href: "/faq" },
-      { title: "Algolia Search", href: "/algolia-search"},
-      { title: "Themes", href: "/themes" },
-      {
-        title: "Customize",
-        href: "/customize",
-      },
+      { title: "FAQ", href: "/faq" }
+      // { title: "Algolia Search", href: "/algolia-search"},
+      // { title: "Themes", href: "/themes" },
+      // {
+      //   title: "Customize",
+      //   href: "/customize",
+      // },
     ],
   },
 ];
