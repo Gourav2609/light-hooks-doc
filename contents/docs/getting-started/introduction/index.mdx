@@ -1,0 +1,93 @@
+---
+title: Introduction
+description: Welcome to Light Hooks - a collection of lightweight React hooks for modern applications.
+---
+
+Welcome to **Light Hooks Documentation**! This is the comprehensive guide for light-hooks, a powerful collection of lightweight and efficient React hooks designed to simplify common patterns in modern React applications.
+
+## About Light Hooks
+
+Light Hooks is proudly **open-source**! 🎉 We believe in creating accessible, performant, and easy-to-use React hooks that help developers build better applications faster.
+
+<Note title="Get Started"> 
+ Ready to enhance your React app? Install light-hooks with `npm install light-hooks` and explore our [GitHub repository](https://github.com/Gourav2609/light-hooks) for the latest updates and contributions!
+</Note>
+
+## Why Light Hooks?
+
+**Light Hooks** is more than just a hook library. It's a **carefully curated collection** designed for modern React development. Key benefits include:
+
+- **Markdown & MDX Support:** Easily write documentation in Markdown, with the option to include interactive components via MDX.
+- **Lightweight & Performant:** Minimal bundle impact with maximum functionality.
+- **TypeScript Support:** Full TypeScript support with comprehensive type definitions.
+- **Zero Dependencies:** Pure React hooks with no external dependencies.
+- **Tree Shakable:** Import only what you need for optimal bundle size.
+
+### Available Hooks
+
+| **Hook**                     | **Description**                                          |
+|------------------------------|----------------------------------------------------------|
+| useLocalStorage              | Sync state with localStorage automatically.              |
+| useSessionStorage            | Manage sessionStorage with React state.                  |
+| useToggle                    | Simple boolean toggle with optional value.               |
+| useCounter                   | Counter with increment, decrement, and reset.            |
+| useDebounce                  | Debounce values for performance optimization.            |
+| useThrottle                  | Throttle function calls for better performance.          |
+| usePrevious                  | Access the previous value of a state or prop.            |
+| useUpdateEffect              | useEffect that skips the first render.                   |
+| useInterval                  | Declarative setInterval with easy cleanup.               |
+| useTimeout                   | Declarative setTimeout with automatic cleanup.           |
+
+
+## Installation & Usage
+
+Light Hooks is designed for modern React applications and supports the latest React features:
+
+- **React 16.8+** - Hooks support required.
+- **TypeScript** - Full type safety and IntelliSense support.
+- **ES Modules** - Modern module system with tree shaking.
+- **SSR Compatible** - Works with Next.js, Gatsby, and other SSR frameworks.
+
+### Quick Start
+
+Install light-hooks in your React project:
+
+```bash
+npm install light-hooks
+# or
+yarn add light-hooks
+# or  
+pnpm add light-hooks
+```
+
+Start using hooks immediately:
+
+```tsx
+import { useLocalStorage, useToggle } from 'light-hooks';
+
+function MyComponent() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+  const [isOpen, toggle] = useToggle(false);
+  
+  return (
+    <div>
+      <button onClick={toggle}>
+        {isOpen ? 'Close' : 'Open'}
+      </button>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Switch to {theme === 'light' ? 'dark' : 'light'} theme
+      </button>
+    </div>
+  );
+}
+```
+
+## Get the Package
+
+Get started with light-hooks from npm:
+
+| Package Manager              | Command                                                                                  |
+|-----------------------------|------------------------------------------------------------------------------------------|
+| npm                          | `npm install light-hooks`                                                               |
+| yarn                         | `yarn add light-hooks`                                                                   |
+| pnpm                         | `pnpm add light-hooks`                                                                   |

@@ -1,0 +1,161 @@
+---
+title: Installation
+description: How to install and use light-hooks in your React project.
+---
+
+Installing light-hooks is simple and straightforward. The package is available on npm and can be installed using any package manager. Light Hooks works with [React](https://reactjs.org/) version 16.8 or higher (hooks support required).
+
+## Package Installation
+Light Hooks can be installed directly from npm using your preferred package manager.
+
+<Stepper>
+  <StepperItem title="Step 1: Install the Package">
+    Install light-hooks using your preferred package manager:
+
+    ```bash
+    npm install light-hooks
+    ```
+    
+    Or with yarn:
+    ```bash
+    yarn add light-hooks
+    ```
+    
+    Or with pnpm:
+    ```bash
+    pnpm add light-hooks
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 2: Import and Use Hooks">
+    Start using hooks in your React components:
+
+    ```tsx
+    import { useLocalStorage, useToggle, useCounter } from 'light-hooks';
+    
+    function MyComponent() {
+      const [count, { increment, decrement, reset }] = useCounter(0);
+      const [isVisible, toggle] = useToggle(false);
+      const [theme, setTheme] = useLocalStorage('theme', 'light');
+      
+      return (
+        <div>
+          <h2>Counter: {count}</h2>
+          <button onClick={increment}>+</button>
+          <button onClick={decrement}>-</button>
+          <button onClick={reset}>Reset</button>
+          
+          <button onClick={toggle}>
+            {isVisible ? 'Hide' : 'Show'} Content
+          </button>
+          
+          {isVisible && <p>This content is toggleable!</p>}
+          
+          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+            Current theme: {theme}
+          </button>
+        </div>
+      );
+    }
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 3: TypeScript Support (Optional)">
+    Light Hooks includes full TypeScript support out of the box:
+
+    <Note title="TypeScript Ready">
+      All hooks come with comprehensive TypeScript definitions. No additional @types packages needed!
+    </Note>
+
+    ```tsx
+    import { useLocalStorage } from 'light-hooks';
+    
+    // Type is automatically inferred as [string, (value: string) => void]
+    const [name, setName] = useLocalStorage('username', 'Anonymous');
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 4: Start Building Amazing Apps">
+    You're all set! Start using light-hooks to enhance your React applications:
+
+    ```tsx
+    // Example: Persistent theme switcher
+    import { useLocalStorage } from 'light-hooks';
+    
+    function ThemeProvider({ children }) {
+      const [theme, setTheme] = useLocalStorage('app-theme', 'light');
+      
+      return (
+        <div className={`theme-${theme}`}>
+          {children}
+        </div>
+      );
+    }
+    ```
+  </StepperItem>
+</Stepper>
+
+## Quick Examples
+
+Here are some quick examples to get you started with common use cases:
+
+### Local Storage Hook
+```tsx
+import { useLocalStorage } from 'light-hooks';
+
+function Settings() {
+  const [settings, setSettings] = useLocalStorage('user-settings', {
+    theme: 'light',
+    language: 'en'
+  });
+
+  return (
+    <div>
+      <select 
+        value={settings.theme} 
+        onChange={(e) => setSettings({...settings, theme: e.target.value})}
+      >
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+  );
+}
+```
+
+### Debounced Search
+```tsx
+import { useDebounce } from 'light-hooks';
+import { useState, useEffect } from 'react';
+
+function SearchComponent() {
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 500);
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      // Perform search with debounced query
+      console.log('Searching for:', debouncedQuery);
+    }
+  }, [debouncedQuery]);
+
+  return (
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+Next steps:
+1. Navigate to your project directory:
+   cd <project-directory>
+2. Install dependencies:
+   npm install
+3. Start the development server:
+   npm run dev
+```
+
+With this setup, you’ll have a ready-to-use AriaDocs instance to start building your documentation.
