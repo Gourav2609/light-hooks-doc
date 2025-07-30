@@ -1,122 +1,364 @@
 ---
 title: Quick Start Guide
-description: This section provides an overview of Quick Start Guide.
+description: Get up and running with light-hooks in 5 minutes. Transform your React components with powerful, lightweight hooks.
 ---
 
-Follow these simple instructions to set up your project efficiently and begin creating content without delay!:
+Ready to supercharge your React app? This guide will get you from zero to hero with light-hooks in just a few minutes!
 
 <Note type="info">
-  All templates follow the same quick start guide, so you can apply these steps universally.
+  This guide assumes you have a React project already set up. If you don't, create one with `npx create-react-app my-app` or `npm create vite@latest my-app -- --template react`.
 </Note>
 
-## Documentation
+## Build a Complete Todo App
 
-1. **Configure Routing**
+We'll build a fully functional todo app showcasing the most popular light-hooks. By the end, you'll have a real app and understand how to use:
 
-   - Open the `@lib/route-config.ts` file and add your routing pages:
+- `useLocalStorage` - for persistent data
+- `useToggle` - for boolean states
+- `useCounter` - for managing numbers
+- `useDebounce` - for search optimization
 
-   
-     ```typescript:route-config.ts
-     export const ROUTES: EachRoute[] = [
-       // Add new route below
-       {
-         title: "Fundamentals",
-         href: "/fundamentals",
-         noLink: true, // Set to true to prevent routing
-         items: [
-           // All the sub-sections under `fundamentals`
-           { title: "HTTP Server", href: "/http-server" },
-         ],
-       },
-     ];
-     ```
+### Step 1: Install and Setup
 
-2. **Create Content Structure**
+Install light-hooks in your project:
 
-   - Navigate to the `@content/docs` directory and create a folder named `fundamentals`, as defined in the `route-config` file. Within this folder, create a subfolder named `http-server`, and inside that, create an `index.mdx` file that will render when you navigate to `/fundamentals/http-server`:
-
-<Files
-  items={[
-    {
-      type: "folder",
-      name: "content",
-      isOpen: true,
-      children: [
-        {
-          type: "folder",
-          name: "docs",
-          isOpen: true,
-          children: [
-            {
-              type: "folder",
-              name: "fundamentals",
-              isOpen: true,
-              children: [
-                {
-                  type: "folder",
-                  name: "http-server",
-                  isOpen: true,
-                  children: [{ type: "file", name: "index.mdx" }],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ]}
-/>
-
-
-3. **Write Your Markdown Content**
-   - Start writing your markdown content inside the `index.mdx` file.
-
-<Note type="warning">
-  Be sure to include frontmatter at the beginning of the file, which is used for
-  the page title and description:
-</Note>
-
-     ```markdown:index.mdx showLineNumbers {1-4}
-     ---
-     title: HTTP Server
-     description: This section is about HTTP Server.
-     ---
-
-     <!-- Here goes your markdown content -->
-     ```
-
-4. **Run Your Application**
-   - Ensure your application is running. Navigate to `http://localhost:3000/docs/fundamentals/http-server` to view your content. You should also see it in the left panel, allowing you to navigate to other pages.
-
-## Blogs
-
-To get started with blogs, follow these steps:
-
-- Navigate to the `@content/blogs` directory and create a file with a unique name prefixed with `.mdx`, then start writing the markdown content inside.
-
-<Note type="warning">
-  Make sure to add the following frontmatter to format data for the blogs
-  properly
-</Note>
-
-```markdown:blog-name.mdx
----
-title: "Building a Recursive File System with React: A Deep Dive"
-description: "Explore how to create a recursive file system in React. This blog post provides a comprehensive guide on building a file system where folders and files can be nested, added, renamed, and deleted."
-date: 02-09-2024
-authors:
-  - avatar: "https://ui.shadcn.com/avatars/02.png"
-    handle: nisabmohd
-    username: Nisab Mohd
-    handleUrl: "https://github.com/nisabmohd"
-cover: "https://img.freepik.com/premium-vector/many-monsters-various-colors-doodle-come-bless-birthday-happy_577083-84.jpg?w=826"
----
-
-<!-- Your blog markdown content -->
+```bash
+npm install light-hooks
 ```
 
-- Navigate to your local development server at `http://localhost:3000/blog`, where you will see your blog listed and sorted based on date. You can navigate to any blog to read it.
+Create a new component file `TodoApp.jsx` (or `.tsx` for TypeScript):
 
-## Explore Further
+```tsx
+import React, { useState } from 'react';
+import { 
+  useLocalStorage, 
+  useToggle, 
+  useCounter, 
+  useDebounce 
+} from 'light-hooks';
 
-This section serves as your starting point for exploring the application. By following the steps above, you can quickly and easily set up your content. For more customization and control, please refer to the following pages.
+export default function TodoApp() {
+  return <div>Let's build something awesome!</div>;
+}
+```
+
+### Step 2: Persistent Todo Storage
+
+Replace the basic useState with persistent storage:
+
+```tsx
+function TodoApp() {
+  // This replaces useState and automatically syncs with localStorage!
+  const [todos, setTodos] = useLocalStorage('my-todos', []);
+  const [newTodo, setNewTodo] = useState('');
+
+  const addTodo = () => {
+    if (newTodo.trim()) {
+      setTodos([...todos, {
+        id: Date.now(),
+        text: newTodo,
+        completed: false
+      }]);
+      setNewTodo('');
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+      <h1>My Awesome Todo App</h1>
+      
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="What needs to be done?"
+          style={{ padding: '10px', marginRight: '10px', width: '300px' }}
+        />
+        <button onClick={addTodo} style={{ padding: '10px' }}>
+          Add Todo
+        </button>
+      </div>
+
+      <div>
+        {todos.map(todo => (
+          <div key={todo.id} style={{ padding: '10px', border: '1px solid #ddd', margin: '5px 0' }}>
+            {todo.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+<Note type="success">
+  **Amazing!** Your todos now persist automatically. Refresh the page - they're still there!
+</Note>
+
+### Step 3: Add Toggle Functionality
+
+Let's add the ability to mark todos as complete using `useToggle`:
+
+```tsx
+function TodoItem({ todo, onToggle, onDelete }) {
+  return (
+    <div style={{ 
+      padding: '10px', 
+      border: '1px solid #ddd', 
+      margin: '5px 0',
+      display: 'flex',
+      justifyContent: 'space-between',
+      backgroundColor: todo.completed ? '#f0f8f0' : 'white'
+    }}>
+      <span 
+        style={{ 
+          textDecoration: todo.completed ? 'line-through' : 'none',
+          color: todo.completed ? '#888' : 'black'
+        }}
+      >
+        {todo.text}
+      </span>
+      <div>
+        <button 
+          onClick={() => onToggle(todo.id)}
+          style={{ marginRight: '10px', padding: '5px 10px' }}
+        >
+          {todo.completed ? 'Undo' : 'Done'}
+        </button>
+        <button 
+          onClick={() => onDelete(todo.id)}
+          style={{ padding: '5px 10px', backgroundColor: '#ff4444', color: 'white' }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TodoApp() {
+  const [todos, setTodos] = useLocalStorage('my-todos', []);
+  const [newTodo, setNewTodo] = useState('');
+  
+  // Perfect for show/hide states!
+  const [showCompleted, toggleShowCompleted] = useToggle(true);
+
+  const addTodo = () => {
+    if (newTodo.trim()) {
+      setTodos([...todos, {
+        id: Date.now(),
+        text: newTodo,
+        completed: false
+      }]);
+      setNewTodo('');
+    }
+  };
+
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  const filteredTodos = showCompleted 
+    ? todos 
+    : todos.filter(todo => !todo.completed);
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+      <h1>My Awesome Todo App</h1>
+      
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="What needs to be done?"
+          style={{ padding: '10px', marginRight: '10px', width: '300px' }}
+        />
+        <button onClick={addTodo} style={{ padding: '10px' }}>
+          Add Todo
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={toggleShowCompleted}
+          style={{ padding: '10px' }}
+        >
+          {showCompleted ? 'Hide' : 'Show'} Completed
+        </button>
+      </div>
+
+      <div>
+        {filteredTodos.map(todo => (
+          <TodoItem 
+            key={todo.id} 
+            todo={todo} 
+            onToggle={toggleTodo}
+            onDelete={deleteTodo}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Step 4: Add Statistics with useCounter
+
+Let's add some stats using `useCounter`:
+
+```tsx
+function TodoStats({ todos }) {
+  // useCounter provides increment, decrement, reset, and set methods!
+  const [viewCount, { increment: incrementViews }] = useCounter(0);
+
+  React.useEffect(() => {
+    incrementViews(); // Count each time stats are viewed
+  }, []);
+
+  const completed = todos.filter(todo => todo.completed).length;
+  const total = todos.length;
+  const pending = total - completed;
+
+  return (
+    <div style={{ 
+      padding: '15px', 
+      backgroundColor: '#f5f5f5', 
+      borderRadius: '8px',
+      margin: '20px 0'
+    }}>
+      <h3>Statistics</h3>
+      <p>Total: {total}</p>
+      <p>Completed: {completed}</p>
+      <p>Pending: {pending}</p>
+      <p>Times viewed: {viewCount}</p>
+    </div>
+  );
+}
+
+// Add <TodoStats todos={todos} /> to your TodoApp component
+```
+
+### Step 5: Add Smart Search with useDebounce
+
+Finally, let's add a search feature that doesn't spam the filter function:
+
+```tsx
+function TodoApp() {
+  const [todos, setTodos] = useLocalStorage('my-todos', []);
+  const [newTodo, setNewTodo] = useState('');
+  const [showCompleted, toggleShowCompleted] = useToggle(true);
+  
+  // Search functionality
+  const [searchTerm, setSearchTerm] = useState('');
+  // Only searches after user stops typing for 300ms!
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // ... other functions ...
+
+  const filteredTodos = todos
+    .filter(todo => showCompleted || !todo.completed)
+    .filter(todo => 
+      debouncedSearch 
+        ? todo.text.toLowerCase().includes(debouncedSearch.toLowerCase())
+        : true
+    );
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+      <h1>My Awesome Todo App</h1>
+      
+      {/* Add Todo Section */}
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="What needs to be done?"
+          style={{ padding: '10px', marginRight: '10px', width: '300px' }}
+        />
+        <button onClick={addTodo} style={{ padding: '10px' }}>
+          Add Todo
+        </button>
+      </div>
+
+      {/* Search Section */}
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search todos..."
+          style={{ padding: '10px', width: '100%' }}
+        />
+      </div>
+
+      {/* Controls */}
+      <div style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={toggleShowCompleted}
+          style={{ padding: '10px' }}
+        >
+          {showCompleted ? 'Hide' : 'Show'} Completed
+        </button>
+      </div>
+
+      {/* Stats */}
+      <TodoStats todos={todos} />
+
+      {/* Todo List */}
+      <div>
+        {filteredTodos.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#888' }}>
+            {debouncedSearch ? 'No todos match your search' : 'No todos yet. Add one above!'}
+          </p>
+        ) : (
+          filteredTodos.map(todo => (
+            <TodoItem 
+              key={todo.id} 
+              todo={todo} 
+              onToggle={toggleTodo}
+              onDelete={deleteTodo}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+### Congratulations!
+
+You've just built a complete todo app using light-hooks! Here's what you accomplished:
+
+- **Persistent Storage**: Todos survive page refreshes with `useLocalStorage`
+- **Smart Toggles**: Show/hide completed items with `useToggle`  
+- **Statistics**: View counting with `useCounter`
+- **Optimized Search**: Debounced filtering with `useDebounce`
+
+<Note type="success">
+  **Pro Tip**: Your app automatically handles edge cases like empty states, persistence, and performance optimization - all thanks to light-hooks!
+</Note>
+
+## What's Next?
+
+Now that you've mastered the basics, explore more hooks:
+
+- **`useInterval`** - for auto-refresh functionality
+- **`useTimeout`** - for delayed actions
+- **`usePrevious`** - to compare with previous values
+- **`useUpdateEffect`** - useEffect that skips first render
+
+Ready to dive deeper? Check out our individual hook documentation for advanced patterns and real-world examples!
+
+## Key Takeaways
+
+1. **Less Boilerplate**: light-hooks eliminate common React patterns
+2. **Built-in Persistence**: `useLocalStorage` handles serialization automatically  
+3. **Performance Optimized**: `useDebounce` prevents excessive function calls
+4. **TypeScript Ready**: Full type safety out of the box
+5. **Tree Shakable**: Import only what you need
