@@ -1,0 +1,301 @@
+---
+title: Contributing
+description: Learn how to contribute to light-hooks and help improve the library for everyone.
+---
+
+We welcome contributions to light-hooks! Whether you're fixing bugs, adding new hooks, improving documentation, or suggesting features, your help makes the library better for everyone.
+
+## Ways to Contribute
+
+### 🐛 Bug Reports
+Found a bug? Help us fix it by creating a detailed issue.
+
+### ✨ Feature Requests  
+Have an idea for a new hook? We'd love to hear about it!
+
+### 📝 Documentation
+Help improve our docs, add examples, or fix typos.
+
+### 🔧 Code Contributions
+Submit bug fixes, new hooks, or performance improvements.
+
+## Getting Started
+
+### 1. Fork the Repository
+
+Fork the [light-hooks repository](https://github.com/Gourav2609/light-hooks) on GitHub.
+
+### 2. Clone Your Fork
+
+```bash
+git clone https://github.com/YOUR_USERNAME/light-hooks.git
+cd light-hooks
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Run Tests
+
+```bash
+npm test
+```
+
+### 5. Start Development
+
+```bash
+npm run dev
+```
+
+## Development Guidelines
+
+### Code Style
+
+We use ESLint and Prettier for consistent code formatting:
+
+```bash
+# Check linting
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
+
+# Format code
+npm run format
+```
+
+### Hook Development
+
+When creating a new hook, follow these principles:
+
+#### 1. Keep It Simple
+```tsx
+// ✅ Good: Simple, focused hook
+function useToggle(initialValue = false) {
+  const [value, setValue] = useState(initialValue);
+  const toggle = useCallback(() => setValue(v => !v), []);
+  return [value, toggle, setValue];
+}
+
+// ❌ Avoid: Complex hook doing multiple things
+function useComplexState() {
+  // ... doing too many things
+}
+```
+
+#### 2. TypeScript First
+```tsx
+// ✅ Good: Proper TypeScript types
+interface UseCountdownOptions {
+  autoStart?: boolean;
+  onComplete?: () => void;
+  interval?: number;
+}
+
+function useCountdown(
+  initialTime: number, 
+  options: UseCountdownOptions = {}
+): [number, CountdownControls] {
+  // Implementation
+}
+```
+
+#### 3. Performance Optimized
+```tsx
+// ✅ Good: Memoized callbacks
+const toggle = useCallback(() => setValue(v => !v), []);
+
+// ✅ Good: Cleanup effects
+useEffect(() => {
+  const timer = setInterval(updateCountdown, interval);
+  return () => clearInterval(timer);
+}, [interval]);
+```
+
+### Testing
+
+All hooks must include comprehensive tests:
+
+```tsx
+// Example test structure
+describe('useCountdown', () => {
+  it('should initialize with correct value', () => {
+    // Test implementation
+  });
+
+  it('should decrement when started', () => {
+    // Test implementation  
+  });
+
+  it('should pause and resume correctly', () => {
+    // Test implementation
+  });
+
+  it('should call onComplete when reaching zero', () => {
+    // Test implementation
+  });
+});
+```
+
+### Documentation
+
+Every hook needs:
+
+1. **JSDoc comments** in the source code
+2. **Usage examples** in the documentation
+3. **TypeScript definitions** exported properly
+
+```tsx
+/**
+ * Hook for managing countdown timers with start, pause, and reset functionality.
+ * 
+ * @param initialTime - Initial countdown time in seconds
+ * @param options - Configuration options
+ * @returns Tuple with current time and control methods
+ * 
+ * @example
+ * ```tsx
+ * const [timeLeft, { start, pause, reset }] = useCountdown(60);
+ * ```
+ */
+export function useCountdown(
+  initialTime: number,
+  options: UseCountdownOptions = {}
+): [number, CountdownControls] {
+  // Implementation
+}
+```
+
+## Submitting Changes
+
+### 1. Create a Branch
+
+```bash
+git checkout -b feature/new-hook-name
+# or
+git checkout -b fix/bug-description
+```
+
+### 2. Make Your Changes
+
+- Write clean, well-documented code
+- Add comprehensive tests
+- Update documentation if needed
+
+### 3. Test Your Changes
+
+```bash
+# Run all tests
+npm test
+
+# Check TypeScript
+npm run type-check
+
+# Lint code
+npm run lint
+```
+
+### 4. Commit Your Changes
+
+Use clear, descriptive commit messages:
+
+```bash
+git commit -m "feat: add useLocalStorage hook"
+git commit -m "fix: prevent memory leak in useInterval"
+git commit -m "docs: add examples for useToggle"
+```
+
+### 5. Push and Create PR
+
+```bash
+git push origin feature/new-hook-name
+```
+
+Then create a Pull Request on GitHub with:
+- Clear description of changes
+- Link to any related issues
+- Screenshots if applicable
+
+## Pull Request Guidelines
+
+### Good PR Description
+
+```markdown
+## Description
+Adds a new `useLocalStorage` hook for persistent state management.
+
+## Changes
+- ✅ New hook implementation
+- ✅ Comprehensive tests  
+- ✅ TypeScript definitions
+- ✅ Documentation and examples
+
+## Testing
+- [x] All existing tests pass
+- [x] New tests added and passing
+- [x] Manual testing completed
+
+Fixes #123
+```
+
+### Review Process
+
+1. **Automated checks** must pass (tests, linting, TypeScript)
+2. **Code review** by maintainers
+3. **Testing** on different environments
+4. **Documentation review**
+
+## Hook Ideas
+
+Looking for contribution ideas? Here are some hooks we'd love to see:
+
+### State Management
+- `useLocalStorage` - Persistent localStorage state
+- `useSessionStorage` - Session storage state  
+- `useToggle` - Boolean toggle with advanced options
+
+### Performance  
+- `useDebounce` - Debounced values
+- `useThrottle` - Throttled function calls
+- `useMemo` - Enhanced memoization
+
+### Effects
+- `useInterval` - Declarative intervals
+- `useTimeout` - Declarative timeouts
+- `useUpdateEffect` - Effect that skips first render
+
+### Utilities
+- `usePrevious` - Previous value tracking
+- `useMediaQuery` - CSS media query matching
+- `useOnlineStatus` - Network status detection
+
+## Questions?
+
+- 💬 [GitHub Discussions](https://github.com/Gourav2609/light-hooks/discussions)
+- 🐛 [Issues](https://github.com/Gourav2609/light-hooks/issues)  
+- 📧 Email: [your-email@example.com]
+
+## Code of Conduct
+
+Please be respectful and constructive in all interactions. We're building a welcoming community where everyone can contribute and learn.
+
+## Recognition
+
+Contributors will be:
+- Added to the README contributors section
+- Credited in release notes
+- Mentioned in documentation
+
+## License
+
+By contributing to light-hooks, you agree that your contributions will be licensed under the [MIT License](https://github.com/Gourav2609/light-hooks/blob/main/LICENSE). This ensures that your contributions can be freely used, modified, and distributed by the community.
+
+When you submit a pull request, you are certifying that:
+- You have the right to submit the work under the MIT license
+- You understand that your contributions are public
+- You agree to the Developer Certificate of Origin (DCO)
+
+Thank you for helping make light-hooks better! 🎉

@@ -1,0 +1,264 @@
+---
+title: FAQ
+description: Frequently asked questions about light-hooks and common solutions to help you quickly resolve issues.
+---
+
+# Frequently Asked Questions
+
+Got questions about light-hooks? We've compiled the most common questions and their answers to help you get started quickly.
+
+## Getting Started
+
+### What is light-hooks?
+light-hooks is a collection of lightweight, reusable React hooks designed to simplify common functionality in your applications. It includes hooks for countdowns, click detection, mobile detection, and network pinging.
+
+### How do I install light-hooks?
+```bash
+npm install light-hooks
+# or
+yarn add light-hooks
+# or
+pnpm add light-hooks
+```
+
+### Is TypeScript supported?
+Yes! light-hooks is built with TypeScript and includes full type definitions out of the box.
+
+### What React versions are supported?
+light-hooks supports React 16.8+ (any version with hooks support) and is fully compatible with React 18.
+
+## Usage Questions
+
+### How do I import hooks?
+Use named imports for better tree-shaking:
+```tsx
+import { useCountdown, useClickOutside } from 'light-hooks';
+```
+
+### Can I use multiple instances of the same hook?
+Absolutely! Each hook instance maintains its own independent state:
+```tsx
+const [timer1] = useCountdown(60);  // 1-minute timer
+const [timer2] = useCountdown(30);  // 30-second timer
+const [timer3] = useCountdown(10);  // 10-second timer
+```
+
+### Why isn't my useCountdown timer updating the UI?
+Make sure you're using the returned state value in your component:
+```tsx
+// ✅ Correct - Component re-renders when timeLeft changes
+const [timeLeft, { start }] = useCountdown(60);
+return <div>Time: {timeLeft}s</div>;
+
+// ❌ Wrong - timeLeft value not used in render
+const [timeLeft, { start }] = useCountdown(60);
+return <div>Timer is running...</div>;
+```
+
+### How do I properly use useClickOutside?
+Always attach the ref to the element you want to monitor:
+```tsx
+const ref = useRef(null);
+useClickOutside(ref, () => {
+  console.log('Clicked outside!');
+});
+
+return <div ref={ref}>Click outside this div</div>;
+```
+
+### Why does isMobile return wrong values?
+For SSR applications, check the value after component mount:
+```tsx
+const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+useEffect(() => {
+  setIsMobileDevice(isMobile());
+}, []);
+```
+
+### How do I handle CORS errors with usePing?
+Use CORS-enabled endpoints or your own API:
+```tsx
+// ✅ Use CORS-enabled endpoint
+const { ping, isOnline } = usePing('https://httpbin.org/ping');
+
+// ✅ Or use default endpoint
+const { ping, isOnline } = usePing();
+```
+
+## Framework Integration
+
+### Can I use light-hooks with Next.js?
+Yes! For client-only hooks, use dynamic imports to avoid SSR issues:
+```tsx
+import dynamic from 'next/dynamic';
+
+const ClientComponent = dynamic(() => import('./MyComponent'), {
+  ssr: false
+});
+```
+
+### Does it work with React Native?
+Most hooks work with React Native, but browser-specific ones like `isMobile` may need adaptation for mobile environments.
+
+### What about Gatsby or other SSR frameworks?
+Similar to Next.js, use dynamic imports for client-only hooks or check for `typeof window !== 'undefined'` before using browser-specific features.
+
+## Performance & Best Practices
+
+### How do I prevent unnecessary re-renders?
+Memoize callback functions passed to hooks:
+```tsx
+const handleComplete = useCallback(() => {
+  console.log('Timer completed!');
+}, []);
+
+const [timeLeft, controls] = useCountdown(60, {
+  onComplete: handleComplete
+});
+```
+
+### Do I need to clean up hooks manually?
+No! All light-hooks handle cleanup automatically when components unmount. Timers, event listeners, and other resources are properly cleaned up.
+
+### Can I customize hook behavior?
+Yes, most hooks accept options objects:
+```tsx
+const [timeLeft, controls] = useCountdown(60, {
+  autoStart: true,
+  interval: 1000,
+  onComplete: () => console.log('Done!'),
+  onTick: (time) => console.log('Current:', time)
+});
+```
+
+## Troubleshooting
+
+### Package not found during installation
+Ensure you're using the correct package name:
+```bash
+npm install light-hooks  # Correct
+npm install react-light-hooks  # Wrong
+```
+
+### TypeScript errors after installation
+1. Restart your TypeScript server: `Ctrl+Shift+P` → "TypeScript: Restart TS Server"
+2. Update to latest version: `npm update light-hooks`
+3. Check your `tsconfig.json` includes proper module resolution
+
+### Hooks not working in production build
+1. Ensure proper tree-shaking with named imports
+2. Check for SSR/hydration mismatches
+3. Verify browser compatibility
+
+### Memory leaks or performance issues
+1. Use `useCallback` for callback functions
+2. Don't start timers inside `useEffect` without proper cleanup
+3. Let hooks handle their own cleanup automatically
+
+## Advanced Usage
+
+### Can I extend or customize hooks?
+Yes! You can create wrapper hooks:
+```tsx
+function useCustomCountdown(initialTime: number) {
+  const [timeLeft, controls] = useCountdown(initialTime, {
+    onComplete: () => {
+      // Custom completion logic
+      alert('Time\'s up!');
+    }
+  });
+  
+  return [timeLeft, controls];
+}
+```
+
+### How do I contribute new hooks?
+See our [Contributing Guide](/contributing) for details on:
+- Development setup
+- Hook development guidelines
+- Testing requirements
+- Pull request process
+
+### Are there plans for more hooks?
+Yes! Check our [GitHub Issues](https://github.com/Gourav2609/light-hooks/issues) for planned features and feel free to suggest new hooks.
+
+## Common Patterns
+
+### Loading states with multiple hooks
+```tsx
+function MyComponent() {
+  const { isOnline } = usePing();
+  const [timeLeft, { start }] = useCountdown(30);
+  const isMobileDevice = isMobile();
+  
+  if (!isOnline) return <div>Offline</div>;
+  if (isMobileDevice) return <MobileView />;
+  
+  return <DesktopView timeLeft={timeLeft} onStart={start} />;
+}
+```
+
+### Conditional hook usage
+```tsx
+function ConditionalTimer({ shouldUseTimer }: { shouldUseTimer: boolean }) {
+  // ✅ Hooks must always be called
+  const [timeLeft, controls] = useCountdown(60);
+  
+  // ✅ Control behavior with effects
+  useEffect(() => {
+    if (shouldUseTimer) {
+      controls.start();
+    } else {
+      controls.pause();
+    }
+  }, [shouldUseTimer]);
+  
+  return shouldUseTimer ? <div>Time: {timeLeft}</div> : <div>Timer disabled</div>;
+}
+```
+
+## Need More Help?
+
+Can't find what you're looking for? We're here to help!
+
+### 🐛 Found a Bug?
+If you've encountered a bug or unexpected behavior:
+
+**[Report an Issue on GitHub →](https://github.com/Gourav2609/light-hooks/issues/new?template=bug_report.md)**
+
+Please include:
+- light-hooks version
+- React version  
+- Browser/environment
+- Minimal reproduction code
+- Expected vs actual behavior
+
+### 💡 Have a Feature Request?
+Got an idea for a new hook or enhancement?
+
+**[Suggest a Feature on GitHub →](https://github.com/Gourav2609/light-hooks/issues/new?template=feature_request.md)**
+
+### 💬 General Questions
+For general questions, usage help, or discussions:
+
+**[Join GitHub Discussions →](https://github.com/Gourav2609/light-hooks/discussions)**
+
+### 📧 Direct Contact
+For private inquiries or collaboration:
+
+**Email:** [your-email@example.com]
+
+---
+
+## Quick Links
+
+- 📚 [Documentation Home](/introduction)
+- 🚀 [Quick Start Guide](/quick-start-guide)  
+- 🔧 [All Hooks](/hook-categories)
+- 🤝 [Contributing](/contributing)
+- 📝 [GitHub Repository](https://github.com/Gourav2609/light-hooks)
+
+We're committed to helping you succeed with light-hooks! Don't hesitate to reach out. 🎉
+
+We're committed to helping you succeed with light-hooks! Don't hesitate to reach out. 🎉

@@ -28,13 +28,14 @@ export const ROUTES: EachRoute[] = [
         title: "Hooks",
         href: "/hooks",
         items: [
-          { title: "useCountdown", href: "/use-countdown" , tag: "New" },
+          { title: "useCountdown", href: "/use-countdown" },
           { title: "useClickOutside", href: "/use-click-outside" },
           { title: "isMobile", href: "/is-mobile" },
           { title: "usePing", href: "/use-ping" },
         ],
       },
-      { title: "Internationalization", href: "/i18n" },
+      { title: "Contributing", href: "/contributing" },
+      { title: "FAQ", href: "/faq" },
       { title: "Algolia Search", href: "/algolia-search"},
       { title: "Themes", href: "/themes" },
       {

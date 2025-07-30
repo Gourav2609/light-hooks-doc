@@ -1,0 +1,308 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when using light-hooks in your React applications.
+---
+
+Having trouble with light-hooks? This guide covers common issues and their solutions to help you get back on track quickly.
+
+## Common Issues
+
+### Installation Problems
+
+#### Package Not Found
+```bash
+npm ERR! 404 Not Found - GET https://registry.npmjs.org/light-hooks
+```
+
+**Solution:** Make sure you're using the correct package name:
+```bash
+npm install light-hooks
+# or
+yarn add light-hooks
+# or
+pnpm add light-hooks
+```
+
+#### TypeScript Errors After Installation
+```typescript
+// Error: Could not find declaration file for module 'light-hooks'
+import { useCountdown } from 'light-hooks';
+```
+
+**Solution:** light-hooks includes TypeScript definitions. If you're still getting errors:
+1. Restart your TypeScript server in VS Code: `Ctrl+Shift+P` → "TypeScript: Restart TS Server"
+2. Check your `tsconfig.json` includes `node_modules` resolution
+3. Update to the latest version: `npm update light-hooks`
+
+### Hook Usage Issues
+
+#### useCountdown Not Updating
+```tsx
+// ❌ Problem: Timer not decrementing
+const [timeLeft, { start }] = useCountdown(60);
+
+// Timer starts but UI doesn't update
+useEffect(() => {
+  start();
+}, []);
+```
+
+**Solution:** Make sure your component is properly handling the state update:
+```tsx
+// ✅ Solution: Component will re-render when timeLeft changes
+const [timeLeft, { start, pause, reset }] = useCountdown(60);
+
+console.log('Current time:', timeLeft); // This will log every second
+
+return <div>Time remaining: {timeLeft}s</div>;
+```
+
+#### useClickOutside Not Triggering
+```tsx
+// ❌ Problem: Click outside not detected
+const ref = useRef(null);
+useClickOutside(ref, () => {
+  console.log('Clicked outside'); // Never logs
+});
+
+return <div>No ref attached</div>; // Missing ref!
+```
+
+**Solution:** Always attach the ref to the target element:
+```tsx
+// ✅ Solution: Properly attach ref
+const ref = useRef(null);
+useClickOutside(ref, () => {
+  console.log('Clicked outside'); // Works!
+});
+
+return <div ref={ref}>Click outside this div</div>;
+```
+
+#### isMobile Returning Wrong Values
+```tsx
+// ❌ Problem: Always returns false on mobile
+const mobile = isMobile();
+console.log(mobile); // false on mobile device
+```
+
+**Solution:** Ensure you're checking after component mount:
+```tsx
+// ✅ Solution: Check after hydration
+const [mobile, setMobile] = useState(false);
+
+useEffect(() => {
+  setMobile(isMobile());
+}, []);
+
+// Or use the hook pattern if available
+const mobile = isMobile();
+```
+
+#### usePing Network Errors
+```tsx
+// ❌ Problem: CORS or network errors
+const { ping, isOnline } = usePing('https://external-api.com');
+```
+
+**Solution:** Use appropriate endpoints and handle CORS:
+```tsx
+// ✅ Solution: Use proper endpoints
+const { ping, isOnline } = usePing('https://httpbin.org/ping'); // CORS-enabled
+// or
+const { ping, isOnline } = usePing(); // Uses default ping endpoint
+```
+
+### Performance Issues
+
+#### Hooks Causing Re-renders
+```tsx
+// ❌ Problem: Unnecessary re-renders
+function MyComponent() {
+  const [timeLeft, controls] = useCountdown(60, {
+    onComplete: () => console.log('Done') // New function every render!
+  });
+}
+```
+
+**Solution:** Memoize callback functions:
+```tsx
+// ✅ Solution: Stable callback reference
+function MyComponent() {
+  const handleComplete = useCallback(() => {
+    console.log('Done');
+  }, []);
+  
+  const [timeLeft, controls] = useCountdown(60, {
+    onComplete: handleComplete
+  });
+}
+```
+
+#### Memory Leaks with Timers
+```tsx
+// ❌ Problem: Timer continues after unmount
+useEffect(() => {
+  const [timeLeft, { start }] = useCountdown(60);
+  start();
+  // Component unmounts but timer keeps running
+}, []);
+```
+
+**Solution:** Hooks handle cleanup automatically, but avoid starting timers in effects:
+```tsx
+// ✅ Solution: Use hooks properly
+const [timeLeft, { start, pause }] = useCountdown(60);
+
+// Start timer when needed
+const handleStart = () => start();
+
+// Cleanup is handled automatically when component unmounts
+```
+
+### Build & Production Issues
+
+#### Hooks Not Working in Production
+Your hooks work in development but fail in production builds.
+
+**Solution:** Check for these common issues:
+1. **SSR/Hydration mismatch** - Use dynamic imports for client-only hooks:
+```tsx
+// ✅ For Next.js
+import dynamic from 'next/dynamic';
+
+const ClientOnlyComponent = dynamic(() => import('./MyComponent'), {
+  ssr: false
+});
+```
+
+2. **Bundle optimization** - Ensure proper tree-shaking:
+```tsx
+// ✅ Use named imports
+import { useCountdown } from 'light-hooks';
+
+// ❌ Avoid default imports if not supported
+import lightHooks from 'light-hooks';
+```
+
+#### TypeScript Build Errors
+```bash
+error TS2307: Cannot find module 'light-hooks' or its corresponding type declarations
+```
+
+**Solution:** 
+1. Check `node_modules` contains the package
+2. Verify TypeScript version compatibility
+3. Clear build cache: `rm -rf node_modules/.cache`
+
+### Browser Compatibility
+
+#### Hooks Not Working in Older Browsers
+Some hooks may not work in older browsers due to modern JavaScript features.
+
+**Solution:** Check browser support and add polyfills if needed:
+```json
+// package.json - Add browserslist
+{
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
+```
+
+For older browsers, consider:
+- Using a polyfill service
+- Transpiling with appropriate babel presets
+- Checking feature support before using hooks
+
+## Debugging Tips
+
+### Enable Debug Mode
+```tsx
+// Add debug logging for hooks
+const [timeLeft, controls] = useCountdown(60, {
+  onTick: (time) => console.log('Countdown:', time),
+  onComplete: () => console.log('Countdown finished!')
+});
+```
+
+### Check Hook State
+```tsx
+// Monitor hook state changes
+useEffect(() => {
+  console.log('Hook state changed:', { timeLeft, /* other values */ });
+}, [timeLeft]);
+```
+
+### Verify Event Listeners
+```tsx
+// Debug click outside events
+useClickOutside(ref, (event) => {
+  console.log('Click outside detected:', event.target);
+});
+```
+
+## Getting Help
+
+If you're still experiencing issues:
+
+### 1. Check Documentation
+- Review the specific hook documentation
+- Check the examples and usage patterns
+- Verify you're using the latest version
+
+### 2. Search Existing Issues
+- [GitHub Issues](https://github.com/Gourav2609/light-hooks/issues)
+- [Stack Overflow](https://stackoverflow.com/questions/tagged/light-hooks)
+
+### 3. Create a Minimal Reproduction
+```tsx
+// Minimal example that reproduces the issue
+import { useCountdown } from 'light-hooks';
+
+function MinimalExample() {
+  const [timeLeft] = useCountdown(10);
+  return <div>{timeLeft}</div>;
+}
+```
+
+### 4. Report the Issue
+When reporting a bug, include:
+- light-hooks version
+- React version
+- Browser/environment
+- Minimal reproduction code
+- Expected vs actual behavior
+
+## Frequently Asked Questions
+
+### Can I use light-hooks with Next.js?
+Yes! light-hooks works with Next.js. For SSR, use dynamic imports for client-only hooks.
+
+### Are the hooks compatible with React 18?
+Yes, light-hooks is compatible with React 18 and supports concurrent features.
+
+### Can I use multiple instances of the same hook?
+Absolutely! Each hook instance maintains its own state:
+```tsx
+const [timer1] = useCountdown(60);
+const [timer2] = useCountdown(30);
+// Both work independently
+```
+
+### Do hooks work with React Native?
+Most hooks work with React Native, but browser-specific ones (like `isMobile`) may need adaptation.
+
+### How do I contribute a fix?
+See our [Contributing Guide](/contributing) for details on submitting fixes and improvements.
+
+## Still Need Help?
+
+- 💬 [GitHub Discussions](https://github.com/Gourav2609/light-hooks/discussions)
+- 🐛 [Report a Bug](https://github.com/Gourav2609/light-hooks/issues/new)
+- 📧 Email: [your-email@example.com]
+
+We're here to help! Don't hesitate to reach out if you're stuck. 🚀
