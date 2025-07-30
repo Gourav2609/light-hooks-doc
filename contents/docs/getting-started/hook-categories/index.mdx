@@ -1,0 +1,129 @@
+---
+title: Hook Categories
+description: Explore different categories of hooks available in light-hooks and understand when to use each one.
+---
+
+Light Hooks provides a comprehensive set of React hooks organized into logical categories. Understanding these categories will help you choose the right hook for your specific use case.
+
+## State Management Hooks
+
+These hooks help you manage different types of state in your React components.
+
+### useCountdown
+**Purpose**: Manage countdown timers with automatic decrement  
+**Use Case**: Timers, OTP expiry, limited-time offers, game timers  
+**Example**: OTP countdown timer
+
+```tsx
+const [timeLeft, { start, pause, reset }] = useCountdown(60);
+// timeLeft automatically decrements from 60 to 0
+```
+
+## UI & Interaction Hooks
+
+These hooks help you manage user interface interactions and responsive behavior.
+
+### useClickOutside
+**Purpose**: Detect clicks outside a specific element  
+**Use Case**: Close modals, dropdown menus, tooltips when clicking outside  
+**Example**: Close dropdown on outside click
+
+```tsx
+const ref = useRef(null);
+useClickOutside(ref, () => {
+  setIsOpen(false);
+});
+```
+
+### isMobile
+**Purpose**: Detect if the user is on a mobile device  
+**Use Case**: Responsive design, conditional rendering, mobile-specific features  
+**Example**: Show different UI for mobile
+
+```tsx
+const mobile = isMobile();
+return mobile ? <MobileNav /> : <DesktopNav />;
+```
+
+## Network & Communication Hooks
+
+These hooks help you manage network requests and server communication.
+
+### usePing
+**Purpose**: Monitor network connectivity and latency  
+**Use Case**: Network status indicators, connection quality monitoring  
+**Example**: Show connection status
+
+```tsx
+const { isOnline, latency } = usePing('https://api.example.com/ping');
+```
+
+## Choosing the Right Hook
+
+### For Timer Functionality
+- **Countdown timers**: `useCountdown`
+- **Need start/pause/reset controls**: `useCountdown`
+
+### For User Interface
+- **Close on outside click**: `useClickOutside`
+- **Mobile-specific behavior**: `isMobile`
+- **Responsive design**: `isMobile`
+
+### For Network Monitoring
+- **Connection status**: `usePing`
+- **Latency monitoring**: `usePing`
+
+## Hook Combinations
+
+Many real-world scenarios benefit from combining multiple hooks:
+
+### Mobile-Optimized Modal
+```tsx
+const mobile = isMobile();
+const modalRef = useRef(null);
+const [isOpen, setIsOpen] = useState(false);
+
+useClickOutside(modalRef, () => {
+  if (!mobile) {
+    setIsOpen(false); // Only close on outside click for desktop
+  }
+});
+```
+
+### Network-Aware Countdown
+```tsx
+const { isOnline } = usePing('https://api.example.com/ping');
+const [timeLeft, { start, pause }] = useCountdown(300);
+
+useEffect(() => {
+  if (isOnline) {
+    start();
+  } else {
+    pause();
+  }
+}, [isOnline]);
+```
+
+### Responsive Click-Outside Behavior
+```tsx
+const mobile = isMobile();
+const dropdownRef = useRef(null);
+const [isOpen, setIsOpen] = useState(false);
+
+useClickOutside(dropdownRef, () => {
+  // Different behavior for mobile vs desktop
+  if (!mobile) {
+    setIsOpen(false);
+  }
+});
+```
+
+## Best Practices
+
+1. **Mobile-First Design**: Use `isMobile` to enhance rather than limit functionality
+2. **Graceful Degradation**: Use `usePing` to handle offline scenarios
+3. **User Experience**: Combine `useClickOutside` with escape key handlers
+4. **Timer Management**: Always provide user controls with `useCountdown`
+5. **Performance**: Consider the frequency of checks in network monitoring
+
+Ready to dive into specific hooks? Check out our detailed documentation for each hook!
