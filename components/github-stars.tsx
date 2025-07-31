@@ -10,7 +10,7 @@ interface GitHubStarsProps {
     className?: string;
 }
 
-export function GitHubStars({ repo, className }: GitHubStarsProps) {
+export function GitHubStars({ repo }: GitHubStarsProps) {
     const [stars, setStars] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
 
