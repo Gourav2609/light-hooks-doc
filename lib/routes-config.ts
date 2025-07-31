@@ -38,6 +38,7 @@ export const ROUTES: EachRoute[] = [
     href: "/hooks",
     items: [
       { title: "useHotkey", href: "/use-hotkey" },
+      { title: "useEvent", href: "/use-event" },
       { title: "useCountdown", href: "/use-countdown" },
       { title: "usePing", href: "/use-ping", tag: 'New' },
       { title: "useClickOutside", href: "/use-click-outside" },
