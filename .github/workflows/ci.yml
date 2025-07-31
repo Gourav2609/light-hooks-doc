@@ -45,28 +45,18 @@ jobs:
       github.actor != 'github-actions[bot]'
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-          
-      - name: Configure Git
+      - name: Trigger Vercel Deployment
         run: |
-          git config --local user.email "gourav2609@users.noreply.github.com"
-          git config --local user.name "Auto Deploy Bot"
+          echo "🚀 Triggering Vercel deployment for ${{ github.actor }}"
           
-      - name: Create deployment trigger
-        run: |
-          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "🚀 Auto-deployment triggered" > .deployment-trigger
-          echo "By: ${{ github.actor }}" >> .deployment-trigger
-          echo "At: $TIMESTAMP" >> .deployment-trigger
+          # Use Vercel Deploy Hook (no commits needed!)
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "ref": "main",
+              "actor": "${{ github.actor }}",
+              "timestamp": "'$(date -Iseconds)'"
+            }'
           
-          git add .deployment-trigger
-          git commit -m "🚀 auto-deploy: trigger for ${{ github.actor }} changes"
-          git push origin main
-          
-          echo "✅ Deployment triggered - Vercel will auto-deploy!"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "✅ Deployment triggered via Vercel Deploy Hook!"
+          echo "🔗 Check status at: https://vercel.com/dashboard"

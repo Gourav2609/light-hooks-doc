@@ -35,9 +35,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# auto-deployment trigger (temporary file)
-.deployment-trigger
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
