@@ -50,7 +50,7 @@ export async function generateMetadata(props: PageProps) {
   if (!res) return {};
   const { title, description } = res;
   return {
-    title,
+    title: title + " - Light Hooks",
     description,
   };
 }
