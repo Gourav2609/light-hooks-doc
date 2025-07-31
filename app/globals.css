@@ -3,7 +3,9 @@
   .theme {
     --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
     --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear
-  }
+  ;
+    --animate-gradient: gradient 8s linear infinite;
+    --animate-line-shadow: line-shadow 15s linear infinite}
 }
 
 @layer base {
@@ -33,6 +35,19 @@
     }
   100% {
     transform: translateZ(0) rotate(360deg);
+    }
+  }
+  @keyframes gradient {
+  to {
+    background-position: var(--bg-size, 300%) 0;
+    }
+  }
+  @keyframes line-shadow {
+  0% {
+    background-position: 0 0;
+    }
+  100% {
+    background-position: 100% -100%;
     }
   }
 }
