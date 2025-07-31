@@ -1,0 +1,72 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Always run build and test
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Lint code
+        run: npm run lint
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Test success
+        run: echo "✅ All checks passed!"
+
+  # Auto-deploy for external contributors
+  auto-deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Only run if the push is not from Gourav2609 or GitHub Actions, and build succeeded
+    if: >
+      github.event_name == 'push' && 
+      github.ref == 'refs/heads/main' &&
+      github.actor != 'Gourav2609' && 
+      github.actor != 'github-actions[bot]'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Configure Git
+        run: |
+          git config --local user.email "gourav2609@users.noreply.github.com"
+          git config --local user.name "Auto Deploy Bot"
+          
+      - name: Create deployment trigger
+        run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "🚀 Auto-deployment triggered" > .deployment-trigger
+          echo "By: ${{ github.actor }}" >> .deployment-trigger
+          echo "At: $TIMESTAMP" >> .deployment-trigger
+          
+          git add .deployment-trigger
+          git commit -m "🚀 auto-deploy: trigger for ${{ github.actor }} changes"
+          git push origin main
+          
+          echo "✅ Deployment triggered - Vercel will auto-deploy!"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
