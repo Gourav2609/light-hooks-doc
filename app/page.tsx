@@ -2,9 +2,9 @@ import { HeroTagLine } from "@/components/hero-tag-line";
 import { HeroText } from "@/components/hero-text";
 import { buttonVariants } from "@/components/ui/button";
 import { Spotlight } from "@/components/ui/spotlight-new";
-import { InteractiveHoverButton } from "@/components/magicui/interactive-hover-button";
+import { ShinyButton } from "@/components/magicui/shiny-button";
 import { page_routes } from "@/lib/routes-config";
-import { MoveUpRightIcon, TerminalSquareIcon } from "lucide-react";
+import { MoveUpRightIcon, TerminalSquareIcon, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -42,17 +42,16 @@ export default function Home() {
       </p>
       <div className="sm:flex sm:flex-row grid grid-cols-2 items-center sm;gap-5 gap-3 mb-8">
         <Link href={`/docs${page_routes[0].href}`}>
-          <InteractiveHoverButton className="px-6 text-base">
-            Get Started
-          </InteractiveHoverButton>
+          <ShinyButton className="group px-4 py-3 text-lg font-semibold bg-black dark:bg-white text-white dark:text-black border-white/20 dark:border-black/20 hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-lg dark:hover:shadow-black/10">
+            <span className="flex items-center gap-2">
+              Get Started
+              <ArrowRight className="w-5 h-5 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+            </span>
+          </ShinyButton>
         </Link>
         <Link
           href="/blog"
-          className={buttonVariants({
-            variant: "secondary",
-            className: "px-6",
-            size: "lg",
-          })}
+          className="group px-6 py-3 text-md font-medium underline underline-offset-4 decoration-2 transition-all duration-300 hover:bg-muted hover:no-underline rounded-lg"
         >
           Read Blog
         </Link>
