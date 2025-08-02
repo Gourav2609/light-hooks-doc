@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/contexts/theme-provider";
 import { Navbar } from "@/components/navbar";
+import { LightHooksBanner } from "@/components/light-hooks-banner";
 import { Space_Mono, Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
 
@@ -63,6 +64,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <LightHooksBanner />
           <Navbar />
           <main className="sm:container mx-auto w-[90vw] h-auto scroll-smooth">
             {children}

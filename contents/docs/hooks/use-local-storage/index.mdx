@@ -1,0 +1,361 @@
+---
+title: useLocalStorage
+description: A React hook for managing localStorage with automatic JSON serialization, type safety, and optional tab synchronization.
+---
+
+# useLocalStorage
+
+A powerful React hook for managing localStorage with automatic JSON serialization, type safety, and optional tab synchronization. This hook provides a clean API similar to `useState` but with persistent storage capabilities.
+
+## Features
+
+- 🔒 **Type Safe**: Full TypeScript support with automatic type inference
+- 📦 **Auto Serialization**: Handles JSON serialization/deserialization automatically
+- 🔄 **Tab Sync**: Optional synchronization across browser tabs
+- 🎯 **Functional Updates**: Supports both direct values and updater functions
+- 🧹 **Cleanup Methods**: Built-in remove and clear functionality
+- ⚡ **Custom Serializers**: Support for custom serialization logic
+
+## Installation
+
+```bash
+npm install light-hooks
+# or
+yarn add light-hooks
+# or
+pnpm add light-hooks
+```
+
+## Basic Usage
+
+```tsx
+import { useLocalStorage } from 'light-hooks';
+
+function UserProfile() {
+  const [user, setUser] = useLocalStorage('user', {
+    name: 'Anonymous',
+    preferences: { theme: 'light' }
+  });
+
+  return (
+    <div>
+      <h1>Welcome, {user.name}!</h1>
+      <button 
+        onClick={() => setUser({ ...user, name: 'John Doe' })}
+      >
+        Update Name
+      </button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | `string` | ✅ | The localStorage key to use |
+| `initialValue` | `T` | ✅ | Initial value if no stored value exists |
+| `options` | `UseLocalStorageOptions` | ❌ | Configuration options |
+
+### Options
+
+```tsx
+interface UseLocalStorageOptions {
+  serializer?: {
+    stringify: (value: any) => string;
+    parse: (value: string) => any;
+  };
+  syncAcrossTabs?: boolean;
+}
+```
+
+### Return Value
+
+```tsx
+interface UseLocalStorageReturn<T> {
+  value: T;                                    // Current stored value
+  setValue: (value: T | ((prev: T) => T)) => void;  // Update function
+  removeValue: () => void;                     // Remove from localStorage
+  clear: () => void;                          // Clear all localStorage
+}
+```
+
+## Examples
+
+### Basic String Storage
+
+```tsx
+function Settings() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+
+  return (
+    <div>
+      <p>Current theme: {theme}</p>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
+    </div>
+  );
+}
+```
+
+### Complex Object Storage
+
+```tsx
+interface ShoppingCart {
+  items: Array<{ id: string; name: string; quantity: number }>;
+  total: number;
+}
+
+function ShoppingCartManager() {
+  const [cart, setCart] = useLocalStorage<ShoppingCart>('cart', {
+    items: [],
+    total: 0
+  });
+
+  const addItem = (item: { id: string; name: string; price: number }) => {
+    setCart(prevCart => ({
+      items: [...prevCart.items, { ...item, quantity: 1 }],
+      total: prevCart.total + item.price
+    }));
+  };
+
+  const clearCart = () => {
+    setCart({ items: [], total: 0 });
+  };
+
+  return (
+    <div>
+      <h2>Cart ({cart.items.length} items)</h2>
+      <p>Total: ${cart.total}</p>
+      <button onClick={clearCart}>Clear Cart</button>
+    </div>
+  );
+}
+```
+
+### Functional Updates
+
+```tsx
+function Counter() {
+  const [count, setCount] = useLocalStorage('counter', 0);
+
+  const increment = () => setCount(prev => prev + 1);
+  const decrement = () => setCount(prev => prev - 1);
+  const reset = () => setCount(0);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+### Tab Synchronization
+
+```tsx
+function SyncedSettings() {
+  const [settings, setSettings] = useLocalStorage(
+    'app-settings',
+    { notifications: true, autoSave: false },
+    { syncAcrossTabs: true }
+  );
+
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={settings.notifications}
+          onChange={(e) => 
+            setSettings(prev => ({ 
+              ...prev, 
+              notifications: e.target.checked 
+            }))
+          }
+        />
+        Enable Notifications
+      </label>
+      
+      <label>
+        <input
+          type="checkbox"
+          checked={settings.autoSave}
+          onChange={(e) => 
+            setSettings(prev => ({ 
+              ...prev, 
+              autoSave: e.target.checked 
+            }))
+          }
+        />
+        Auto Save
+      </label>
+    </div>
+  );
+}
+```
+
+### Custom Serializer
+
+```tsx
+function DateStorage() {
+  const [lastVisit, setLastVisit] = useLocalStorage(
+    'lastVisit',
+    new Date(),
+    {
+      serializer: {
+        stringify: (date: Date) => date.toISOString(),
+        parse: (dateString: string) => new Date(dateString)
+      }
+    }
+  );
+
+  return (
+    <div>
+      <p>Last visit: {lastVisit.toLocaleDateString()}</p>
+      <button onClick={() => setLastVisit(new Date())}>
+        Update Visit Time
+      </button>
+    </div>
+  );
+}
+```
+
+### Cleanup Operations
+
+```tsx
+function DataManager() {
+  const [userData, setUserData, removeUserData, clearAll] = useLocalStorage(
+    'userData',
+    { name: '', email: '' }
+  );
+
+  return (
+    <div>
+      <input
+        value={userData.name}
+        onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
+        placeholder="Name"
+      />
+      
+      <input
+        value={userData.email}
+        onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+        placeholder="Email"
+      />
+      
+      <button onClick={removeUserData}>
+        Remove User Data
+      </button>
+      
+      <button onClick={clearAll}>
+        Clear All Storage
+      </button>
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+The hook provides excellent TypeScript support with automatic type inference:
+
+```tsx
+// Type is automatically inferred as string
+const [name, setName] = useLocalStorage('name', 'John');
+
+// Type is automatically inferred as number
+const [age, setAge] = useLocalStorage('age', 25);
+
+// Complex type with explicit generic
+interface User {
+  id: number;
+  name: string;
+  preferences: {
+    theme: 'light' | 'dark';
+    language: string;
+  };
+}
+
+const [user, setUser] = useLocalStorage<User>('user', {
+  id: 1,
+  name: 'John',
+  preferences: {
+    theme: 'light',
+    language: 'en'
+  }
+});
+```
+
+## Best Practices
+
+### 1. Use Meaningful Keys
+```tsx
+// ❌ Avoid generic keys
+const [data, setData] = useLocalStorage('data', {});
+
+// ✅ Use descriptive keys
+const [userPreferences, setUserPreferences] = useLocalStorage('user-preferences', {});
+```
+
+### 2. Provide Sensible Defaults
+```tsx
+// ✅ Always provide meaningful initial values
+const [settings, setSettings] = useLocalStorage('app-settings', {
+  theme: 'light',
+  notifications: true,
+  autoSave: false
+});
+```
+
+### 3. Handle Large Objects Carefully
+```tsx
+// ✅ Be mindful of localStorage size limits (typically 5-10MB)
+const [largeData, setLargeData] = useLocalStorage('large-data', []);
+
+// Consider chunking or compression for very large datasets
+```
+
+### 4. Use Tab Sync Strategically
+```tsx
+// ✅ Enable for user preferences that should sync
+const [theme, setTheme] = useLocalStorage('theme', 'light', { 
+  syncAcrossTabs: true 
+});
+
+// ❌ Avoid for form data or temporary state
+const [formData, setFormData] = useLocalStorage('form-data', {});
+```
+
+## Browser Compatibility
+
+- ✅ Modern browsers with localStorage support
+- ✅ Server-side rendering safe (returns initial value on server)
+- ✅ Graceful fallback when localStorage is unavailable
+
+## Common Use Cases
+
+- 🎨 **Theme Preferences**: Store user's dark/light mode preference
+- 🛒 **Shopping Cart**: Persist cart items across sessions
+- 📝 **Form Data**: Auto-save form progress
+- ⚙️ **User Settings**: Store application preferences
+- 🔑 **Authentication**: Persist user tokens (with proper security)
+- 📊 **Analytics**: Store user interaction data locally
+
+## Performance Considerations
+
+- Changes are batched to avoid excessive localStorage writes
+- JSON serialization only occurs when values actually change
+- Tab synchronization uses efficient event listeners
+- No unnecessary re-renders when localStorage changes externally
+
+---
+
+Need help with other hooks? Check out our [complete hooks reference](/docs/hooks).
