@@ -13,7 +13,7 @@ export function LightHooksBanner() {
   return (
     <StickyBanner className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 border-b">
       <p className="mx-0 max-w-[90%] text-white drop-shadow-md text-center text-sm sm:text-base">
-        🚀 We're actively developing new and unique custom hooks for React!{" "}
+        🚀 We&rsquo;re actively developing new and unique custom hooks for React!{" "}
         <a 
           href="https://github.com/Gourav2609/light-hooks" 
           target="_blank"
