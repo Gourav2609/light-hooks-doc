@@ -1,5 +1,5 @@
 import { ModeToggle } from "@/components/theme-toggle";
-import { GithubIcon, TwitterIcon, CommandIcon, Star } from "lucide-react";
+import { GithubIcon, CommandIcon } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import { ShinyButton } from "@/components/magicui/shiny-button";
@@ -8,7 +8,6 @@ import { SheetLeftbar } from "./leftbar";
 import { page_routes } from "@/lib/routes-config";
 import { SheetClose } from "@/components/ui/sheet";
 import AlgoliaSearch from "./algolia-search";
-// import { GitHubStars } from "./github-stars";
 
 export const NAVLINKS = [
   {
@@ -48,7 +47,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center sm:justify-normal justify-between sm:gap-3 ml-1 sm:w-fit w-[90%]">
-          
+
           <Link
             href="https://github.com/Gourav2609/light-hooks"
             target="_blank"
