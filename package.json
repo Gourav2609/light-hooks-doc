@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "gray-matter": "^4.0.3",
+    "light-hooks": "^2.6.0",
     "lucide-react": "^0.435.0",
     "motion": "^12.23.12",
     "next": "15.0.4",
