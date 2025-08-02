@@ -1,0 +1,331 @@
+---
+title: isMobile
+description: A React hook that detects if the current device is mobile based on screen width with customizable breakpoint configuration for responsive design patterns.
+---
+
+The `isMobile` hook provides a simple and efficient way to detect mobile devices in React applications. It monitors the window width and returns a boolean value indicating whether the current viewport is considered mobile based on a customizable breakpoint.
+
+## Basic Usage
+
+### Simple Mobile Detection
+
+```tsx
+import { isMobile } from "light-hooks";
+
+function ResponsiveComponent() {
+  const mobile = isMobile();
+
+  return (
+    <div>
+      <h1>Welcome to our site!</h1>
+      {mobile ? (
+        <p>📱 You're viewing on mobile</p>
+      ) : (
+        <p>🖥️ You're viewing on desktop</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Custom Breakpoint
+
+```tsx
+function CustomBreakpoint() {
+  const isTablet = isMobile({ breakpoint: 1024 }); // Tablet and below
+  const isSmallMobile = isMobile({ breakpoint: 480 }); // Small mobile devices
+
+  return (
+    <div>
+      <h2>Device Detection</h2>
+      <ul>
+        <li>Small Mobile: {isSmallMobile ? "✅" : "❌"}</li>
+        <li>Tablet/Mobile: {isTablet ? "✅" : "❌"}</li>
+      </ul>
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Responsive Navigation
+
+```tsx
+function Navigation() {
+  const isMobileDevice = isMobile({ breakpoint: 768 });
+
+  return (
+    <nav>
+      {isMobileDevice ? (
+        <MobileMenu />
+      ) : (
+        <DesktopMenu />
+      )}
+    </nav>
+  );
+}
+
+function MobileMenu() {
+  return (
+    <div className="mobile-menu">
+      <button className="hamburger">☰</button>
+      <div className="mobile-nav-items">
+        <a href="/home">Home</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+      </div>
+    </div>
+  );
+}
+
+function DesktopMenu() {
+  return (
+    <div className="desktop-menu">
+      <a href="/home">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Services</a>
+      <a href="/portfolio">Portfolio</a>
+      <a href="/contact">Contact</a>
+    </div>
+  );
+}
+```
+
+### Conditional Content Rendering
+
+```tsx
+function BlogPost() {
+  const isMobileDevice = isMobile();
+
+  return (
+    <article>
+      <header>
+        <h1>My Blog Post</h1>
+        {!isMobileDevice && (
+          <div className="desktop-meta">
+            <span>Published: March 15, 2024</span>
+            <span>Reading time: 5 minutes</span>
+            <div className="social-share">
+              <button>Share on Twitter</button>
+              <button>Share on LinkedIn</button>
+            </div>
+          </div>
+        )}
+      </header>
+      
+      <div className="content">
+        <p>Blog post content goes here...</p>
+      </div>
+      
+      {isMobileDevice && (
+        <div className="mobile-actions">
+          <button className="share-btn">📤 Share</button>
+          <button className="bookmark-btn">🔖 Bookmark</button>
+        </div>
+      )}
+    </article>
+  );
+}
+```
+
+### Multiple Breakpoints
+
+```tsx
+function MultiBreakpointLayout() {
+  const isSmallMobile = isMobile({ breakpoint: 480 });
+  const isMobile768 = isMobile({ breakpoint: 768 });
+  const isTablet = isMobile({ breakpoint: 1024 });
+
+  const getDeviceType = () => {
+    if (isSmallMobile) return "small-mobile";
+    if (isMobile768) return "mobile";
+    if (isTablet) return "tablet";
+    return "desktop";
+  };
+
+  const deviceType = getDeviceType();
+
+  return (
+    <div className={`layout layout-${deviceType}`}>
+      <h2>Current Device: {deviceType}</h2>
+      
+      {deviceType === "small-mobile" && (
+        <div className="minimal-layout">
+          <h3>Minimal Mobile Layout</h3>
+          <p>Simplified interface for small screens</p>
+        </div>
+      )}
+      
+      {deviceType === "mobile" && (
+        <div className="mobile-layout">
+          <h3>Mobile Layout</h3>
+          <p>Mobile-optimized interface</p>
+        </div>
+      )}
+      
+      {deviceType === "tablet" && (
+        <div className="tablet-layout">
+          <h3>Tablet Layout</h3>
+          <p>Tablet-optimized interface with more content</p>
+        </div>
+      )}
+      
+      {deviceType === "desktop" && (
+        <div className="desktop-layout">
+          <h3>Desktop Layout</h3>
+          <p>Full desktop experience with all features</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+The `isMobile` hook accepts an optional configuration object:
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `options` | `IsMobileOptions` | `{}` | Configuration options for the hook |
+
+### Options
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `breakpoint` | `number` | `768` | The pixel width below which the device is considered mobile |
+
+### Return Value
+
+| Type | Description |
+| --- | --- |
+| `boolean` | `true` if the current viewport width is below the breakpoint, `false` otherwise |
+
+## Common Breakpoints
+
+Here are some commonly used breakpoints you might want to consider:
+
+```tsx
+// Common device breakpoints
+const isSmallMobile = isMobile({ breakpoint: 480 });   // Small phones
+const isMobileLarge = isMobile({ breakpoint: 768 });   // Large phones (default)
+const isTablet = isMobile({ breakpoint: 1024 });       // Tablets
+const isLaptop = isMobile({ breakpoint: 1440 });       // Small laptops
+```
+
+## Best Practices
+
+### 1. **Choose Appropriate Breakpoints**
+
+```tsx
+// ✅ Good: Use standard breakpoints
+const isMobileDevice = isMobile({ breakpoint: 768 });
+
+// ❌ Avoid: Non-standard breakpoints without reason
+const isWeirdSize = isMobile({ breakpoint: 733 });
+```
+
+### 2. **Combine with CSS Media Queries**
+
+```tsx
+// Use the hook for JavaScript logic
+function App() {
+  const isMobileDevice = isMobile();
+  
+  return (
+    <div className={`app ${isMobileDevice ? 'mobile' : 'desktop'}`}>
+      {/* Content */}
+    </div>
+  );
+}
+```
+
+```css
+/* Use CSS media queries for styling */
+@media (max-width: 768px) {
+  .mobile-specific {
+    display: block;
+  }
+  .desktop-specific {
+    display: none;
+  }
+}
+```
+
+### 3. **Performance Considerations**
+
+The hook automatically handles window resize events and cleanup, so you don't need to worry about memory leaks or performance issues.
+
+```tsx
+// ✅ Good: Use in multiple components without concern
+function Header() {
+  const isMobileDevice = isMobile();
+  return <header>{/* Mobile-specific header */}</header>;
+}
+
+function Sidebar() {
+  const isMobileDevice = isMobile();
+  return <aside>{/* Mobile-specific sidebar */}</aside>;
+}
+```
+
+## Browser Support
+
+The `isMobile` hook works in all modern browsers that support:
+- `window.innerWidth`
+- `addEventListener` and `removeEventListener`
+- React hooks
+
+This includes all browsers from the last 5+ years.
+
+## Related Hooks
+
+- **useWindowSize**: Get both width and height of the window
+- **useMediaQuery**: More advanced media query detection
+- **useBreakpoint**: Multiple breakpoint detection
+
+## Troubleshooting
+
+### Server-Side Rendering (SSR)
+
+When using with SSR frameworks like Next.js, the hook will return `false` on the server and update correctly on the client:
+
+```tsx
+function SSRSafeComponent() {
+  const isMobileDevice = isMobile();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div>Loading...</div>; // or default desktop view
+  }
+
+  return (
+    <div>
+      {isMobileDevice ? "Mobile View" : "Desktop View"}
+    </div>
+  );
+}
+```
+
+### Hydration Mismatch
+
+To avoid hydration mismatches in SSR:
+
+```tsx
+function HydrationSafeComponent() {
+  const isMobileDevice = isMobile();
+  
+  return (
+    <div suppressHydrationWarning>
+      {isMobileDevice ? "Mobile" : "Desktop"}
+    </div>
+  );
+}
+```

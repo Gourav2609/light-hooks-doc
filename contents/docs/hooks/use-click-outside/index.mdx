@@ -1,0 +1,542 @@
+---
+title: useClickOutside
+description: A React hook that detects clicks outside of a specified element, perfect for modals, dropdowns, and other overlay components that need to close when clicking outside.
+---
+
+The `useClickOutside` hook provides an elegant solution for detecting when users click outside of a specific element. This is essential for implementing modals, dropdowns, tooltips, and other overlay components that should close when users interact with other parts of the page.
+
+## Basic Usage
+
+### Simple Modal Example
+
+```tsx
+import { useClickOutside } from "light-hooks";
+import { useState } from "react";
+
+function Modal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const modalRef = useClickOutside(() => setIsOpen(false));
+
+  return (
+    <div>
+      <button onClick={() => setIsOpen(true)}>
+        Open Modal
+      </button>
+      
+      {isOpen && (
+        <div className="modal-overlay">
+          <div ref={modalRef} className="modal-content">
+            <h2>Modal Title</h2>
+            <p>Click outside this modal to close it</p>
+            <button onClick={() => setIsOpen(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Dropdown Menu
+
+```tsx
+function Dropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useClickOutside(() => setIsOpen(false));
+
+  return (
+    <div className="dropdown-container">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="dropdown-trigger"
+      >
+        Menu ▼
+      </button>
+      
+      {isOpen && (
+        <div ref={dropdownRef} className="dropdown-menu">
+          <a href="/profile">Profile</a>
+          <a href="/settings">Settings</a>
+          <a href="/logout">Logout</a>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Conditional Activation
+
+```tsx
+function ConditionalModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  
+  // Only enable click outside when modal is open AND not pinned
+  const modalRef = useClickOutside(
+    () => setIsOpen(false),
+    { enabled: isOpen && !isPinned }
+  );
+
+  return (
+    <div>
+      <button onClick={() => setIsOpen(true)}>
+        Open Modal
+      </button>
+      
+      {isOpen && (
+        <div className="modal-overlay">
+          <div ref={modalRef} className="modal-content">
+            <div className="modal-header">
+              <h2>Conditional Close Modal</h2>
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={isPinned}
+                  onChange={(e) => setIsPinned(e.target.checked)}
+                />
+                Pin modal (disable click outside)
+              </label>
+            </div>
+            <p>
+              {isPinned 
+                ? "Modal is pinned - click outside won't close it" 
+                : "Click outside to close this modal"
+              }
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Custom Events Configuration
+
+```tsx
+function TouchFriendlyDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Listen for both mouse and touch events
+  const dropdownRef = useClickOutside(
+    () => setIsOpen(false),
+    { 
+      events: ['mousedown', 'touchstart', 'focusin'] 
+    }
+  );
+
+  return (
+    <div className="touch-dropdown">
+      <button onClick={() => setIsOpen(!isOpen)}>
+        Touch-Friendly Menu
+      </button>
+      
+      {isOpen && (
+        <div ref={dropdownRef} className="dropdown-content">
+          <button>Option 1</button>
+          <button>Option 2</button>
+          <button>Option 3</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Multi-Level Dropdown
+
+```tsx
+function MultiLevelDropdown() {
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  
+  const mainMenuRef = useClickOutside(() => setActiveMenu(null));
+
+  return (
+    <div className="multi-dropdown">
+      <button onClick={() => setActiveMenu('main')}>
+        Navigation
+      </button>
+      
+      {activeMenu && (
+        <div ref={mainMenuRef} className="dropdown-menu">
+          <div 
+            className="menu-item"
+            onMouseEnter={() => setActiveMenu('products')}
+          >
+            Products →
+          </div>
+          <div 
+            className="menu-item"
+            onMouseEnter={() => setActiveMenu('services')}
+          >
+            Services →
+          </div>
+          
+          {activeMenu === 'products' && (
+            <div className="submenu">
+              <div>Product A</div>
+              <div>Product B</div>
+              <div>Product C</div>
+            </div>
+          )}
+          
+          {activeMenu === 'services' && (
+            <div className="submenu">
+              <div>Consulting</div>
+              <div>Support</div>
+              <div>Training</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Tooltip with Click Outside
+
+```tsx
+function InteractiveTooltip({ children, content }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const tooltipRef = useClickOutside(() => setIsVisible(false));
+
+  return (
+    <div className="tooltip-container">
+      <div 
+        onClick={() => setIsVisible(!isVisible)}
+        className="tooltip-trigger"
+      >
+        {children}
+      </div>
+      
+      {isVisible && (
+        <div ref={tooltipRef} className="tooltip-content">
+          {content}
+          <button onClick={() => setIsVisible(false)}>
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Usage
+function App() {
+  return (
+    <InteractiveTooltip 
+      content={
+        <div>
+          <h4>Interactive Tooltip</h4>
+          <p>This tooltip can contain interactive elements!</p>
+          <button>Action Button</button>
+        </div>
+      }
+    >
+      <span>Click me for tooltip</span>
+    </InteractiveTooltip>
+  );
+}
+```
+
+### Form Validation Popup
+
+```tsx
+function FormWithValidation() {
+  const [errors, setErrors] = useState<string[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
+  const errorPopupRef = useClickOutside(() => setShowErrors(false));
+
+  const validateForm = () => {
+    const newErrors = [];
+    // Validation logic here
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
+      setShowErrors(true);
+    }
+  };
+
+  return (
+    <form className="validation-form">
+      <input type="email" placeholder="Email" />
+      <input type="password" placeholder="Password" />
+      
+      <button type="button" onClick={validateForm}>
+        Validate
+      </button>
+      
+      {showErrors && errors.length > 0 && (
+        <div ref={errorPopupRef} className="error-popup">
+          <h4>Validation Errors</h4>
+          <ul>
+            {errors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </form>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `callback` | `() => void` | ✅ | Function to call when clicking outside the element |
+| `options` | `UseClickOutsideOptions` | ❌ | Configuration options for the hook |
+
+### Options
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true` | Whether the hook is enabled or disabled |
+| `events` | `string[]` | `['mousedown', 'touchstart']` | Array of events to listen for |
+
+### Return Value
+
+| Type | Description |
+| --- | --- |
+| `RefObject<T>` | A React ref object to attach to the element you want to detect outside clicks for |
+
+## Event Types
+
+The hook supports various event types for different interaction patterns:
+
+```tsx
+// Mouse events
+const ref1 = useClickOutside(callback, { events: ['mousedown'] });
+const ref2 = useClickOutside(callback, { events: ['mouseup'] });
+const ref3 = useClickOutside(callback, { events: ['click'] });
+
+// Touch events (mobile-friendly)
+const ref4 = useClickOutside(callback, { events: ['touchstart'] });
+const ref5 = useClickOutside(callback, { events: ['touchend'] });
+
+// Focus events (keyboard navigation)
+const ref6 = useClickOutside(callback, { events: ['focusin'] });
+
+// Combined events (recommended for accessibility)
+const ref7 = useClickOutside(callback, { 
+  events: ['mousedown', 'touchstart', 'focusin'] 
+});
+```
+
+## Best Practices
+
+### 1. **Choose Appropriate Events**
+
+```tsx
+// ✅ Good: Default events work for most cases
+const modalRef = useClickOutside(closeModal);
+
+// ✅ Good: Add focusin for keyboard accessibility
+const accessibleRef = useClickOutside(closeDropdown, {
+  events: ['mousedown', 'touchstart', 'focusin']
+});
+
+// ❌ Avoid: Using 'click' can interfere with form submissions
+const problematicRef = useClickOutside(callback, { events: ['click'] });
+```
+
+### 2. **Conditional Enabling**
+
+```tsx
+// ✅ Good: Only enable when needed
+const modalRef = useClickOutside(closeModal, { enabled: isModalOpen });
+
+// ❌ Avoid: Always enabled when component exists
+const alwaysEnabledRef = useClickOutside(closeModal); // Can cause issues
+```
+
+### 3. **Multiple Elements**
+
+```tsx
+// ✅ Good: Use separate refs for separate elements
+function MultipleModals() {
+  const modal1Ref = useClickOutside(() => setModal1Open(false));
+  const modal2Ref = useClickOutside(() => setModal2Open(false));
+  
+  return (
+    <>
+      {modal1Open && <div ref={modal1Ref}>Modal 1</div>}
+      {modal2Open && <div ref={modal2Ref}>Modal 2</div>}
+    </>
+  );
+}
+```
+
+### 4. **Nested Elements**
+
+```tsx
+// ✅ Good: Attach ref to the outermost container
+function NestedDropdown() {
+  const dropdownRef = useClickOutside(closeDropdown);
+  
+  return (
+    <div ref={dropdownRef} className="dropdown">
+      <div className="dropdown-header">Header</div>
+      <div className="dropdown-content">
+        <button>Option 1</button>
+        <button>Option 2</button>
+      </div>
+    </div>
+  );
+}
+```
+
+## Accessibility Considerations
+
+### Keyboard Navigation Support
+
+```tsx
+function AccessibleModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const modalRef = useClickOutside(() => setIsOpen(false), {
+    events: ['mousedown', 'touchstart', 'focusin']
+  });
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
+  return (
+    <div>
+      <button onClick={() => setIsOpen(true)}>
+        Open Accessible Modal
+      </button>
+      
+      {isOpen && (
+        <div className="modal-overlay">
+          <div 
+            ref={modalRef} 
+            className="modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
+            <h2 id="modal-title">Accessible Modal</h2>
+            <p>Press Escape or click outside to close</p>
+            <button onClick={() => setIsOpen(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Common Use Cases
+
+### 1. **Modal Dialogs**
+```tsx
+const modalRef = useClickOutside(() => setModalOpen(false));
+```
+
+### 2. **Dropdown Menus**
+```tsx
+const dropdownRef = useClickOutside(() => setDropdownOpen(false));
+```
+
+### 3. **Context Menus**
+```tsx
+const contextMenuRef = useClickOutside(() => setContextMenuVisible(false));
+```
+
+### 4. **Popover Components**
+```tsx
+const popoverRef = useClickOutside(() => setPopoverVisible(false));
+```
+
+### 5. **Autocomplete Suggestions**
+```tsx
+const suggestionsRef = useClickOutside(() => setSuggestionsVisible(false));
+```
+
+## Browser Support
+
+The `useClickOutside` hook works in all modern browsers that support:
+- `addEventListener` and `removeEventListener`
+- React refs and useEffect
+- Event bubbling
+
+This includes all browsers from the last 5+ years.
+
+## Related Hooks
+
+- **useEscapeKey**: Close components with the Escape key
+- **useFocusTrap**: Trap focus within a component
+- **useOutsideClick**: Alternative name for the same functionality
+- **useModal**: Complete modal management solution
+
+## Troubleshooting
+
+### Issue: Callback Fires on First Click
+
+```tsx
+// ❌ Problem: Using 'click' event
+const ref = useClickOutside(callback, { events: ['click'] });
+
+// ✅ Solution: Use 'mousedown' instead
+const ref = useClickOutside(callback, { events: ['mousedown'] });
+```
+
+### Issue: Not Working on Mobile
+
+```tsx
+// ❌ Problem: Missing touch events
+const ref = useClickOutside(callback, { events: ['mousedown'] });
+
+// ✅ Solution: Include touch events
+const ref = useClickOutside(callback, { 
+  events: ['mousedown', 'touchstart'] 
+});
+```
+
+### Issue: Interfering with Form Submissions
+
+```tsx
+// ❌ Problem: Dropdown closes before form submission
+const ref = useClickOutside(closeDropdown);
+
+// ✅ Solution: Disable temporarily or check event target
+const ref = useClickOutside(() => {
+  // Add small delay to allow form submission
+  setTimeout(closeDropdown, 100);
+});
+```
+
+### Issue: Multiple Refs on Same Element
+
+```tsx
+// ❌ Problem: Trying to use multiple refs
+<div ref={ref1} ref={ref2}> // This won't work
+
+// ✅ Solution: Combine into single ref or use callback refs
+const combinedRef = useCallback((node) => {
+  ref1.current = node;
+  ref2.current = node;
+}, []);
+
+<div ref={combinedRef}>
+```
