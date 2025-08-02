@@ -53,7 +53,7 @@ export const ROUTES: EachRoute[] = [
         tag: "Coming Soon",
       },
       { title: "useHotkey", href: "/use-hotkey", tag: "New" },
-      { title: "usePing", href: "/use-ping" },
+      { title: "usePing", href: "/use-ping" , tag: "Hot" },
     ],
   },
   { title: "Contributing", href: "/contributing" },

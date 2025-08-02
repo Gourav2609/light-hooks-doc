@@ -1,77 +1,196 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Author,
-  BlogMdxFrontmatter,
-  getAllBlogsFrontmatter,
-} from "@/lib/markdown";
-import { formatDate2, stringToDate } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink, Calendar, Clock, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { getLocalPosts, getExternalPosts, BlogPost, Author } from "@/data/blog-posts";
 
 export const metadata: Metadata = {
-  title: "AriaDocs - Blog",
+  title: "Light Hooks - Blog",
+  description: "Latest articles, tutorials, and insights about React hooks development and best practices.",
 };
 
-export default async function BlogIndexPage() {
-  const blogs = (await getAllBlogsFrontmatter()).sort(
-    (a, b) => stringToDate(b.date).getTime() - stringToDate(a.date).getTime()
-  );
+export default function BlogPage() {
+  const localPosts = getLocalPosts();
+  const externalPosts = getExternalPosts();
+
   return (
-    <div className="flex flex-col gap-1 sm:min-h-[91vh] min-h-[88vh] pt-2">
-      <div className="mb-7 flex flex-col gap-2">
-        <h1 className="sm:text-3xl text-2xl font-extrabold">
-          The latest blogs of this product
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header */}
+      <div className="mb-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Blog & Articles
         </h1>
-        <p className="text-muted-foreground sm:text-[16.5px] text-[14.5px]">
-          All the latest blogs and news, straight from the team.
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Insights, tutorials, and thoughts on React development, custom hooks, and modern web development practices.
         </p>
       </div>
-      <div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 sm:gap-8 gap-4 mb-5">
-        {blogs.map((blog) => (
-          <BlogCard {...blog} slug={blog.slug} key={blog.slug} />
-        ))}
-      </div>
+
+      {/* Featured/Recent Posts */}
+      {localPosts.length > 0 && (
+        <section className="mb-16">
+          <div className="flex items-center gap-3 mb-8">
+            <h2 className="text-2xl font-bold">Latest Articles</h2>
+            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+              On Site
+            </Badge>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {localPosts.map((post) => (
+              <BlogCard key={post.id} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* External Posts */}
+      {externalPosts.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <h2 className="text-2xl font-bold">Published Elsewhere</h2>
+            <Badge variant="outline" className="border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300">
+              External
+            </Badge>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {externalPosts.map((post) => (
+              <ExternalBlogCard key={post.id} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
-function BlogCard({
-  date,
-  title,
-  description,
-  slug,
-  cover,
-  authors,
-}: BlogMdxFrontmatter & { slug: string }) {
+function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link
-      href={`/blog/${slug}`}
-      className="flex flex-col gap-2 items-start border rounded-md py-5 px-3 min-h-[400px]"
+      href={`/blog/${post.slug}`}
+      className="group block bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
     >
-      <h3 className="text-md font-semibold -mt-1 pr-7">{title}</h3>
-      <div className="w-full">
-        <Image
-          src={cover}
-          alt={title}
-          width={400}
-          height={150}
-          quality={80}
-          className="w-full rounded-md object-cover h-[180px] border"
-        />
+      <div className="aspect-video relative overflow-hidden">
+        <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+          <span className="text-4xl font-bold text-muted-foreground/50">
+            {post.title.charAt(0)}
+          </span>
+        </div>
       </div>
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <div className="flex items-center justify-between w-full mt-auto">
-        <p className="text-[13px] text-muted-foreground">
-          Published on {formatDate2(date)}
+      
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-3">
+          {post.tags.slice(0, 2).map((tag: string) => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        
+        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+          {post.title}
+        </h3>
+        
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+          {post.description}
         </p>
-        <AvatarGroup users={authors} />
+        
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {new Date(post.date).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {post.readTime}
+            </div>
+          </div>
+          
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+        
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+          <AvatarGroup users={post.authors} />
+        </div>
       </div>
     </Link>
   );
 }
 
-function AvatarGroup({ users, max = 4 }: { users: Author[]; max?: number }) {
+function ExternalBlogCard({ post }: { post: BlogPost }) {
+  const platformColors = {
+    Medium: "bg-gray-800 text-white",
+    LinkedIn: "bg-blue-600 text-white", 
+    "Dev.to": "bg-black text-white"
+  };
+
+  return (
+    <a
+      href={post.externalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative"
+    >
+      {/* External indicator */}
+      <div className="absolute top-3 right-3 z-10">
+        <div className={`px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 ${platformColors[post.platform as keyof typeof platformColors] || 'bg-gray-600 text-white'}`}>
+          <ExternalLink className="w-3 h-3" />
+          {post.platform}
+        </div>
+      </div>
+      
+      <div className="aspect-video relative overflow-hidden">
+        <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+          <span className="text-4xl font-bold text-muted-foreground/50">
+            {post.title.charAt(0)}
+          </span>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-3">
+          {post.tags.slice(0, 2).map((tag: string) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        
+        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+          {post.title}
+        </h3>
+        
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+          {post.description}
+        </p>
+        
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {new Date(post.date).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {post.readTime}
+            </div>
+          </div>
+          
+          <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
+        </div>
+        
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+          <AvatarGroup users={post.authors} />
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function AvatarGroup({ users, max = 3 }: { users: Author[]; max?: number }) {
   const displayUsers = users.slice(0, max);
   const remainingUsers = Math.max(users.length - max, 0);
 
@@ -80,19 +199,18 @@ function AvatarGroup({ users, max = 4 }: { users: Author[]; max?: number }) {
       {displayUsers.map((user, index) => (
         <Avatar
           key={user.username}
-          className={`inline-block border-2 w-9 h-9 border-background ${
-            index !== 0 ? "-ml-3" : ""
-          } `}
+          className={`inline-block border-2 border-background w-8 h-8 ${
+            index !== 0 ? "-ml-2" : ""
+          }`}
         >
-          <AvatarImage src={user.avatar} alt={user.username} />
-          <AvatarFallback>
-            {user.username.slice(0, 2).toUpperCase()}
+          <AvatarFallback className="text-xs">
+            {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
           </AvatarFallback>
         </Avatar>
       ))}
       {remainingUsers > 0 && (
-        <Avatar className="-ml-3 inline-block border-2 border-background hover:translate-y-1 transition-transform">
-          <AvatarFallback>+{remainingUsers}</AvatarFallback>
+        <Avatar className="-ml-2 inline-block border-2 border-background w-8 h-8">
+          <AvatarFallback className="text-xs">+{remainingUsers}</AvatarFallback>
         </Avatar>
       )}
     </div>

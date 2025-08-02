@@ -9,6 +9,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .bg-gradient-radial {
+    background-image: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

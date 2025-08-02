@@ -63,10 +63,10 @@ export default function Home() {
             </ShinyButton>
           </Link>
           <Link
-            href="/blog"
+            href="/examples"
             className="group px-6 py-3 text-md font-medium underline underline-offset-4 decoration-2 transition-all duration-300 hover:bg-muted hover:no-underline rounded-lg"
           >
-            Read Blog
+            See Examples
           </Link>
         </div>
         <div className="sm:flex hidden flex-row items-center sm:gap-2 gap-0.5 text-muted-foreground text-md mt-5 -mb-12 max-[800px]:mb-12 font-code sm:text-base text-sm font-medium">
