@@ -1,6 +1,7 @@
 import { ModeToggle } from "@/components/theme-toggle";
 import { GithubIcon, CommandIcon } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { buttonVariants } from "./ui/button";
 import { ShinyButton } from "@/components/magicui/shiny-button";
 import Anchor from "./anchor";
@@ -87,7 +88,13 @@ export function Navbar() {
 export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
-      <CommandIcon className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
+      <Image 
+        src="/logo.svg" 
+        alt="Light Hooks Logo" 
+        width={24} 
+        height={24} 
+        className="size-8"
+      />
       <h2 className="text-md font-bold font-code">Light Hooks</h2>
     </Link>
   );

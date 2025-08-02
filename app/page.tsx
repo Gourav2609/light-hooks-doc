@@ -1,12 +1,26 @@
+"use client";
+
 import { HeroTagLine } from "@/components/hero-tag-line";
 import { HeroText } from "@/components/hero-text";
 import { Spotlight } from "@/components/ui/spotlight-new";
 import { ShinyButton } from "@/components/magicui/shiny-button";
 import { page_routes } from "@/lib/routes-config";
-import { TerminalSquareIcon, ArrowRight } from "lucide-react";
+import { TerminalSquareIcon, ArrowRight, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function Home() {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText("npm install light-hooks");
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
   return (
     <>
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -35,9 +49,9 @@ export default function Home() {
       </h1> */}
         <HeroText />
         <p className="mb-8 md:text-lg text-base  max-w-[1200px] text-muted-foreground text-left sm:text-center">
-          Comprehensive documentation for light-hooks, a collection of lightweight
-          and efficient React hooks designed to simplify state management and
-          common patterns in modern React applications.
+          A custom-built collection of lightweight and efficient React hooks crafted to 
+          work seamlessly across all modern React frameworks and build tools. 
+          Designed to simplify state management and common patterns in modern applications.
         </p>
         <div className="sm:flex sm:flex-row grid grid-cols-2 items-center sm;gap-5 gap-3 mb-8">
           <Link href={`/docs${page_routes[0].href}`}>
@@ -55,10 +69,21 @@ export default function Home() {
             Read Blog
           </Link>
         </div>
-        <span className="sm:flex hidden flex-row items-start sm:gap-2 gap-0.5 text-muted-foreground text-md mt-5 -mb-12 max-[800px]:mb-12 font-code sm:text-base text-sm font-medium">
+        <div className="sm:flex hidden flex-row items-center sm:gap-2 gap-0.5 text-muted-foreground text-md mt-5 -mb-12 max-[800px]:mb-12 font-code sm:text-base text-sm font-medium">
           <TerminalSquareIcon className="w-5 h-5 sm:mr-1 mt-0.5" />
-          {"npm install light-hooks"}
-        </span>
+          <span className="select-all">npm install light-hooks</span>
+          <button
+            onClick={copyToClipboard}
+            className="ml-2 p-1.5 rounded-md hover:bg-muted transition-colors duration-200 group"
+            aria-label="Copy to clipboard"
+          >
+            {isCopied ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Copy className="w-4 h-4 group-hover:text-foreground transition-colors" />
+            )}
+          </button>
+        </div>
       </div>
     </>
   );

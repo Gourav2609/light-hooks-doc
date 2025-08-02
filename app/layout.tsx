@@ -23,6 +23,19 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://light-hooks-docs.vercel.app/"),
   description:
     "Comprehensive documentation for light-hooks, a collection of lightweight and efficient React hooks designed to simplify state management and common patterns in modern React applications.",
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/logo.png', type: 'image/png' }
+    ],
+    shortcut: '/logo.svg',
+    apple: '/logo.png',
+  },
+  openGraph: {
+    title: "Light Hooks - Documentation",
+    description: "Comprehensive documentation for light-hooks, a collection of lightweight and efficient React hooks.",
+    images: ['/logo.png'],
+  },
 };
 
 export default function RootLayout({
