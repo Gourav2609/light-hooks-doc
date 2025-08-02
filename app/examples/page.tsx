@@ -19,9 +19,8 @@ export default function ExamplesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
-      {/* Animated background elements */}
+      
       <div className="absolute inset-0 overflow-hidden">
-        {/* Floating particles */}
         {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
@@ -43,7 +42,6 @@ export default function ExamplesPage() {
           />
         ))}
 
-        {/* Mouse follower gradient */}
         <motion.div
           className="absolute w-96 h-96 bg-gradient-radial from-primary/10 to-transparent rounded-full pointer-events-none"
           animate={{
@@ -59,7 +57,7 @@ export default function ExamplesPage() {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
-        {/* Back button */}
+      
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -75,14 +73,12 @@ export default function ExamplesPage() {
           </Link>
         </motion.div>
 
-        {/* Main content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center max-w-4xl mx-auto"
         >
-          {/* Animated icon */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -131,7 +127,6 @@ export default function ExamplesPage() {
             </div>
           </motion.div>
 
-          {/* Title with gradient text */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -152,19 +147,17 @@ export default function ExamplesPage() {
             </motion.span>
           </motion.h1>
 
-          {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
             className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed"
           >
-            We're crafting beautiful, interactive examples to showcase the power of{" "}
+            We&rsquo;re crafting beautiful, interactive examples to showcase the power of{" "}
             <span className="text-primary font-semibold">Light Hooks</span>. 
             Get ready for live demos, code playgrounds, and real-world use cases!
           </motion.p>
 
-          {/* Feature preview cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -190,7 +183,7 @@ export default function ExamplesPage() {
                 description: "Production-ready implementation examples",
                 delay: 1.1,
               },
-            ].map((feature, index) => (
+            ].map((feature) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -214,7 +207,6 @@ export default function ExamplesPage() {
             ))}
           </motion.div>
 
-          {/* Status indicator */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -234,7 +226,6 @@ export default function ExamplesPage() {
             <span className="font-medium">Under Development</span>
           </motion.div>
 
-          {/* Progress indicator */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -255,7 +246,6 @@ export default function ExamplesPage() {
             </div>
           </motion.div>
 
-          {/* Call to action */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
