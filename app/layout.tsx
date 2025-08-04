@@ -4,6 +4,7 @@ import { Navbar } from "@/components/navbar";
 import { LightHooksBanner } from "@/components/light-hooks-banner";
 import { Space_Mono, Space_Grotesk } from "next/font/google";
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "@/styles/globals.css";
 
 const sansFont = Space_Grotesk({
@@ -71,6 +72,7 @@ export default function RootLayout({
             {children}
           </main>
           <Analytics />
+          <SpeedInsights/>
         </ThemeProvider>
       </body>
     </html>
