@@ -1,5 +1,5 @@
 interface StructuredDataProps {
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
 
 export function StructuredData({ data }: StructuredDataProps) {
@@ -64,7 +64,7 @@ export function ArticleStructuredData({
       "name": "Light Hooks",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://light-hooks-docs.vercel.app/logo.png"
+        "url": "https://www.lighthooks.com/logo.png"
       }
     },
     "articleSection": section,
