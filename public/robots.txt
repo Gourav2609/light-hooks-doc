@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Allow all crawlers access to all content
+Allow: /docs/
+Allow: /blog/
+Allow: /api/
+
+# Block access to internal files
+Disallow: /_next/
+Disallow: /api/private/
+
+# Sitemaps
+Sitemap: https://www.lighthooks.com/sitemap.xml
+Sitemap: https://www.lighthooks.com/sitemap-0.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Specific instructions for major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
