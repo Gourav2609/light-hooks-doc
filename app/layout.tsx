@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/contexts/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { LightHooksBanner } from "@/components/light-hooks-banner";
 import { Space_Mono, Space_Grotesk } from "next/font/google";
+import { Analytics } from '@vercel/analytics/react';
 import "@/styles/globals.css";
 
 const sansFont = Space_Grotesk({
@@ -69,6 +70,7 @@ export default function RootLayout({
           <main className="sm:container mx-auto w-[90vw] h-auto scroll-smooth">
             {children}
           </main>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
