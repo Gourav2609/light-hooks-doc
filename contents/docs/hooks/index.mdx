@@ -13,7 +13,7 @@ Light Hooks provides a collection of powerful, lightweight React hooks designed 
 
 ### UI & Interaction
 - **[useClickOutside](/docs/hooks/use-click-outside)** - Detect clicks outside specific elements
-- **[isMobile](/docs/hooks/is-mobile)** - Device detection for responsive behavior
+- **[useIsMobile](/docs/hooks/use-is-mobile)** - Device detection for responsive behavior with ResizeObserver
 
 ### Network & Communication
 - **[usePing](/docs/hooks/use-ping)** - Network connectivity and latency monitoring
@@ -27,7 +27,7 @@ import {
   useCountdown, 
   useLocalStorage, 
   useClickOutside, 
-  isMobile, 
+  useIsMobile, 
   usePing 
 } from 'light-hooks';
 ```
@@ -55,14 +55,14 @@ function Timer() {
 ```tsx
 function Modal({ children, onClose }) {
   const modalRef = useRef(null);
-  const mobile = isMobile();
+  const isMobile = useIsMobile();
   
   useClickOutside(modalRef, () => {
-    if (!mobile) onClose(); // Only close on outside click for desktop
+    if (!isMobile) onClose(); // Only close on outside click for desktop
   });
   
   return (
-    <div ref={modalRef} className={mobile ? 'mobile-modal' : 'desktop-modal'}>
+    <div ref={modalRef} className={isMobile ? 'mobile-modal' : 'desktop-modal'}>
       {children}
     </div>
   );
@@ -118,8 +118,8 @@ const [timeLeft, controls] = useCountdown(60);
 // timeLeft: number
 // controls: { start: () => void, pause: () => void, reset: () => void, isRunning: boolean }
 
-const mobile = isMobile();
-// mobile: boolean
+const isMobile = useIsMobile();
+// isMobile: boolean
 
 const { isOnline, latency } = usePing('https://api.example.com');
 // isOnline: boolean

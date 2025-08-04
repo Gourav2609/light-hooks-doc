@@ -37,7 +37,7 @@ export const ROUTES: EachRoute[] = [
     title: "Hooks",
     href: "/hooks",
     items: [
-      { title: "isMobile", href: "/is-mobile" },
+      { title: "useIsMobile", href: "/use-is-mobile" },
       { title: "useClickOutside", href: "/use-click-outside" },
       { title: "useCountdown", href: "/use-countdown" },
       {
