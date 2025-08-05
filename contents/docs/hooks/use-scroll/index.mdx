@@ -1,0 +1,1088 @@
+---
+title: useScroll
+description: A React hook for managing scroll position, direction, velocity tracking, and scroll lock functionality with comprehensive scroll control capabilities.
+---
+
+The `useScroll` hook provides a comprehensive solution for scroll management in React applications. It offers position tracking, direction detection, velocity calculation, scroll lock functionality, and programmatic scroll control with support for both window and element-specific scrolling.
+
+## Basic Usage
+
+### Simple Scroll Tracking
+
+```tsx
+import { useScroll } from "light-hooks";
+
+function ScrollTracker() {
+  const { scrollY, direction, isAtTop, isAtBottom } = useScroll();
+
+  return (
+    <div className="scroll-info">
+      <p>Scroll Position: {scrollY}px</p>
+      <p>Direction: {direction.y || "Not scrolling"}</p>
+      <p>At Top: {isAtTop ? "Yes" : "No"}</p>
+      <p>At Bottom: {isAtBottom ? "Yes" : "No"}</p>
+    </div>
+  );
+}
+```
+
+### Scroll Lock for Modals
+
+```tsx
+function Modal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { setScrollLock, scrollToTop } = useScroll();
+
+  useEffect(() => {
+    setScrollLock(isOpen);
+    return () => setScrollLock(false);
+  }, [isOpen, setScrollLock]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <h2>Modal Content</h2>
+        <p>Background scroll is locked while this modal is open</p>
+        <button onClick={onClose}>Close</button>
+        <button onClick={() => scrollToTop()}>
+          Scroll to Top (when closed)
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+The hook accepts a `ScrollOptions` configuration object:
+
+| Property         | Type                            | Default  | Description                            |
+| ---------------- | ------------------------------- | -------- | -------------------------------------- |
+| `target`         | `HTMLElement \| Window \| null` | `window` | Target element to monitor scroll       |
+| `throttle`       | `number`                        | `16`     | Throttle scroll events in milliseconds |
+| `trackDirection` | `boolean`                       | `true`   | Whether to track scroll direction      |
+| `trackVelocity`  | `boolean`                       | `false`  | Whether to track scroll velocity       |
+
+### Return Value
+
+Returns a `ScrollResult` object with:
+
+| Property         | Type                                                         | Description                              |
+| ---------------- | ------------------------------------------------------------ | ---------------------------------------- |
+| `scrollX`        | `number`                                                     | Current horizontal scroll position       |
+| `scrollY`        | `number`                                                     | Current vertical scroll position         |
+| `isLocked`       | `boolean`                                                    | Whether scroll is currently locked       |
+| `direction`      | `{ x: ScrollDirection, y: ScrollDirection }`                 | Scroll direction for both axes           |
+| `velocity`       | `{ x: number, y: number }`                                   | Scroll velocity in pixels per second     |
+| `setScrollLock`  | `(locked: boolean) => void`                                  | Function to lock/unlock scroll           |
+| `scrollTo`       | `(x: number, y: number, smooth?: boolean) => void`           | Scroll to specific position              |
+| `scrollToTop`    | `(smooth?: boolean) => void`                                 | Scroll to top                            |
+| `scrollToBottom` | `(smooth?: boolean) => void`                                 | Scroll to bottom                         |
+| `scrollBy`       | `(deltaX: number, deltaY: number, smooth?: boolean) => void` | Scroll by relative amount                |
+| `isAtTop`        | `boolean`                                                    | Whether at the top of scrollable area    |
+| `isAtBottom`     | `boolean`                                                    | Whether at the bottom of scrollable area |
+| `scrollHeight`   | `number`                                                     | Total scrollable height                  |
+| `scrollWidth`    | `number`                                                     | Total scrollable width                   |
+
+### Types
+
+```tsx
+type ScrollDirection = "up" | "down" | "left" | "right" | null;
+
+interface ScrollOptions {
+  target?: HTMLElement | Window | null;
+  throttle?: number;
+  trackDirection?: boolean;
+  trackVelocity?: boolean;
+}
+```
+
+## Examples
+
+### Scroll Progress Indicator
+
+```tsx
+function ScrollProgress() {
+  const { scrollY, scrollHeight, isAtTop, isAtBottom } = useScroll();
+
+  const progress =
+    scrollHeight > 0
+      ? Math.min((scrollY / (scrollHeight - window.innerHeight)) * 100, 100)
+      : 0;
+
+  return (
+    <div className="scroll-progress-container">
+      <div
+        className="scroll-progress-bar"
+        style={{
+          width: `${progress}%`,
+          height: "4px",
+          backgroundColor: "#007bff",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 9999,
+          transition: "width 0.3s ease",
+        }}
+      />
+      <div className="progress-info">
+        <p>Progress: {progress.toFixed(1)}%</p>
+        <p>
+          Position: {scrollY}px of {scrollHeight}px
+        </p>
+        <div className="status-indicators">
+          {isAtTop && <span className="indicator top">📍 Top</span>}
+          {isAtBottom && <span className="indicator bottom">🏁 Bottom</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Back to Top Button
+
+```tsx
+function BackToTopButton() {
+  const { scrollY, scrollToTop, direction } = useScroll();
+
+  const isVisible = scrollY > 300;
+  const isScrollingUp = direction.y === "up";
+
+  return (
+    <button
+      className={`back-to-top ${isVisible ? "visible" : "hidden"} ${
+        isScrollingUp ? "priority" : ""
+      }`}
+      onClick={() => scrollToTop()}
+      style={{
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        padding: "12px",
+        borderRadius: "50%",
+        border: "none",
+        backgroundColor: isScrollingUp ? "#007bff" : "#6c757d",
+        color: "white",
+        cursor: "pointer",
+        transform: isVisible ? "translateY(0)" : "translateY(100px)",
+        transition: "all 0.3s ease",
+        zIndex: 1000,
+        boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+      }}
+      aria-label="Back to top"
+    >
+      ↑ Top
+    </button>
+  );
+}
+```
+
+### Infinite Scroll
+
+```tsx
+function InfiniteScrollList() {
+  const [items, setItems] = useState<string[]>(
+    Array.from({ length: 20 }, (_, i) => `Item ${i + 1}`)
+  );
+  const [loading, setLoading] = useState(false);
+
+  const { scrollY, scrollHeight, isAtBottom } = useScroll({
+    throttle: 100, // Less frequent updates for performance
+  });
+
+  const loadMoreItems = useCallback(async () => {
+    if (loading) return;
+
+    setLoading(true);
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setItems((prev) => [
+      ...prev,
+      ...Array.from({ length: 10 }, (_, i) => `Item ${prev.length + i + 1}`),
+    ]);
+    setLoading(false);
+  }, [loading]);
+
+  // Load more when near bottom
+  useEffect(() => {
+    if (isAtBottom && !loading) {
+      loadMoreItems();
+    }
+  }, [isAtBottom, loading, loadMoreItems]);
+
+  return (
+    <div className="infinite-scroll-container">
+      <h2>Infinite Scroll Demo</h2>
+      <div className="scroll-stats">
+        <p>Items loaded: {items.length}</p>
+        <p>Scroll position: {scrollY}px</p>
+        <p>Total height: {scrollHeight}px</p>
+      </div>
+
+      <div className="items-list">
+        {items.map((item, index) => (
+          <div key={index} className="list-item">
+            {item}
+          </div>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="loading-indicator">
+          <p>Loading more items...</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Scroll-Based Navigation
+
+```tsx
+function ScrollNavigation() {
+  const { scrollY, direction, scrollTo } = useScroll();
+  const [activeSection, setActiveSection] = useState("home");
+
+  const sections = [
+    { id: "home", label: "Home", offset: 0 },
+    { id: "about", label: "About", offset: 800 },
+    { id: "services", label: "Services", offset: 1600 },
+    { id: "contact", label: "Contact", offset: 2400 },
+  ];
+
+  // Update active section based on scroll position
+  useEffect(() => {
+    const currentSection = sections
+      .slice()
+      .reverse()
+      .find((section) => scrollY >= section.offset - 100);
+
+    if (currentSection) {
+      setActiveSection(currentSection.id);
+    }
+  }, [scrollY]);
+
+  const navigateToSection = (sectionId: string) => {
+    const section = sections.find((s) => s.id === sectionId);
+    if (section) {
+      scrollTo(0, section.offset);
+    }
+  };
+
+  return (
+    <nav
+      className={`scroll-navigation ${
+        direction.y === "down" ? "hidden" : "visible"
+      }`}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "white",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        transform:
+          direction.y === "down" && scrollY > 100
+            ? "translateY(-100%)"
+            : "translateY(0)",
+        transition: "transform 0.3s ease",
+        zIndex: 100,
+        padding: "1rem",
+      }}
+    >
+      <div className="nav-container">
+        <div className="nav-brand">Your Site</div>
+        <ul className="nav-links">
+          {sections.map((section) => (
+            <li key={section.id}>
+              <button
+                className={`nav-link ${
+                  activeSection === section.id ? "active" : ""
+                }`}
+                onClick={() => navigateToSection(section.id)}
+              >
+                {section.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="scroll-info">
+          <small>
+            Scroll: {scrollY}px | Direction: {direction.y || "none"}
+          </small>
+        </div>
+      </div>
+    </nav>
+  );
+}
+```
+
+### Scroll Velocity Animation
+
+```tsx
+function VelocityBasedAnimation() {
+  const { velocity, direction, scrollY } = useScroll({
+    trackVelocity: true,
+    throttle: 8, // Higher frequency for smooth velocity tracking
+  });
+
+  const maxVelocity = 2000; // pixels per second
+  const velocityIntensity = Math.min(Math.abs(velocity.y) / maxVelocity, 1);
+
+  return (
+    <div className="velocity-demo">
+      <div
+        className="velocity-indicator"
+        style={{
+          position: "fixed",
+          top: "50%",
+          right: "20px",
+          transform: "translateY(-50%)",
+          width: "60px",
+          height: "200px",
+          backgroundColor: "#f0f0f0",
+          borderRadius: "30px",
+          overflow: "hidden",
+          border: "2px solid #ddd",
+        }}
+      >
+        <div
+          className="velocity-bar"
+          style={{
+            width: "100%",
+            height: `${velocityIntensity * 100}%`,
+            backgroundColor: direction.y === "down" ? "#ff6b6b" : "#4ecdc4",
+            transition: "all 0.1s ease",
+            borderRadius: "28px",
+            position: "absolute",
+            bottom: 0,
+          }}
+        />
+      </div>
+
+      <div className="velocity-stats">
+        <h3>Scroll Velocity Tracker</h3>
+        <p>Current Velocity: {Math.round(Math.abs(velocity.y))} px/s</p>
+        <p>Direction: {direction.y || "Stationary"}</p>
+        <p>Intensity: {(velocityIntensity * 100).toFixed(1)}%</p>
+        <p>Scroll Position: {scrollY}px</p>
+      </div>
+
+      <div
+        className="parallax-element"
+        style={{
+          transform: `translateY(${scrollY * 0.5}px) scale(${
+            1 + velocityIntensity * 0.1
+          })`,
+          transition: "transform 0.1s ease",
+          backgroundColor: `rgba(${255 * velocityIntensity}, 100, 200, 0.3)`,
+          padding: "2rem",
+          margin: "2rem 0",
+          borderRadius: "10px",
+        }}
+      >
+        <h2>Velocity-Responsive Element</h2>
+        <p>This element responds to your scroll velocity and direction!</p>
+      </div>
+    </div>
+  );
+}
+```
+
+### Custom Scrollable Container
+
+```tsx
+function CustomScrollContainer() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    scrollX,
+    scrollY,
+    direction,
+    isAtTop,
+    isAtBottom,
+    scrollTo,
+    scrollBy,
+  } = useScroll({
+    target: containerRef.current,
+    throttle: 16,
+  });
+
+  const items = Array.from({ length: 100 }, (_, i) => `Item ${i + 1}`);
+
+  return (
+    <div className="custom-scroll-demo">
+      <h2>Custom Scrollable Container</h2>
+
+      <div className="container-controls">
+        <button onClick={() => scrollTo(0, 0)}>Top</button>
+        <button onClick={() => scrollBy(0, -200)}>Up 200px</button>
+        <button onClick={() => scrollBy(0, 200)}>Down 200px</button>
+        <button onClick={() => scrollTo(0, 9999)}>Bottom</button>
+      </div>
+
+      <div className="scroll-info">
+        <p>
+          Position: {scrollX}, {scrollY}
+        </p>
+        <p>
+          Direction: {direction.x || "none"}, {direction.y || "none"}
+        </p>
+        <p>At top: {isAtTop ? "Yes" : "No"}</p>
+        <p>At bottom: {isAtBottom ? "Yes" : "No"}</p>
+      </div>
+
+      <div
+        ref={containerRef}
+        className="scrollable-container"
+        style={{
+          height: "400px",
+          width: "300px",
+          overflow: "auto",
+          border: "2px solid #ddd",
+          borderRadius: "8px",
+          padding: "1rem",
+        }}
+      >
+        {items.map((item, index) => (
+          <div
+            key={index}
+            className="container-item"
+            style={{
+              padding: "1rem",
+              margin: "0.5rem 0",
+              backgroundColor: index % 2 === 0 ? "#f8f9fa" : "#e9ecef",
+              borderRadius: "4px",
+              transform:
+                direction.y === "down" ? "translateX(5px)" : "translateX(0)",
+              transition: "transform 0.2s ease",
+            }}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Scroll Lock Manager
+
+```tsx
+function ScrollLockManager() {
+  const { isLocked, setScrollLock, scrollY } = useScroll();
+  const [lockReason, setLockReason] = useState<string>("");
+
+  const lockScroll = (reason: string) => {
+    setLockReason(reason);
+    setScrollLock(true);
+  };
+
+  const unlockScroll = () => {
+    setLockReason("");
+    setScrollLock(false);
+  };
+
+  const lockReasons = [
+    "Modal is open",
+    "Loading content",
+    "Form validation errors",
+    "Video is playing",
+    "Menu is expanded",
+  ];
+
+  return (
+    <div className="scroll-lock-manager">
+      <h2>Scroll Lock Manager</h2>
+
+      <div className="lock-status">
+        <p>Scroll Status: {isLocked ? "🔒 Locked" : "🔓 Unlocked"}</p>
+        <p>Current Position: {scrollY}px</p>
+        {lockReason && <p>Reason: {lockReason}</p>}
+      </div>
+
+      <div className="lock-controls">
+        <h3>Lock Scroll:</h3>
+        {lockReasons.map((reason, index) => (
+          <button
+            key={index}
+            onClick={() => lockScroll(reason)}
+            disabled={isLocked}
+            style={{ margin: "0.25rem", padding: "0.5rem" }}
+          >
+            {reason}
+          </button>
+        ))}
+      </div>
+
+      <div className="unlock-controls">
+        <button
+          onClick={unlockScroll}
+          disabled={!isLocked}
+          style={{
+            padding: "0.75rem 1.5rem",
+            backgroundColor: isLocked ? "#dc3545" : "#6c757d",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: isLocked ? "pointer" : "not-allowed",
+          }}
+        >
+          Unlock Scroll
+        </button>
+      </div>
+
+      <div className="demo-content">
+        <h3>Test Content</h3>
+        <p>This is some content to test scrolling behavior.</p>
+        {Array.from({ length: 50 }, (_, i) => (
+          <p key={i}>
+            Paragraph {i + 1}: Lorem ipsum dolor sit amet, consectetur
+            adipiscing elit.
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Reading Progress Tracker
+
+```tsx
+function ReadingProgressTracker() {
+  const { scrollY, scrollHeight, direction } = useScroll();
+  const [readingTime, setReadingTime] = useState(0);
+  const [wordsRead, setWordsRead] = useState(0);
+
+  const articleRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef(Date.now());
+
+  // Calculate reading progress
+  const progress =
+    scrollHeight > 0
+      ? Math.min((scrollY / (scrollHeight - window.innerHeight)) * 100, 100)
+      : 0;
+
+  // Estimate words read based on scroll position
+  useEffect(() => {
+    if (articleRef.current) {
+      const totalWords = articleRef.current.textContent?.split(" ").length || 0;
+      const estimatedWordsRead = Math.floor((progress / 100) * totalWords);
+      setWordsRead(estimatedWordsRead);
+    }
+  }, [progress]);
+
+  // Track reading time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setReadingTime(Date.now() - startTimeRef.current);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}:${(seconds % 60).toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <div className="reading-tracker">
+      <div
+        className="reading-progress-bar"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: `${progress}%`,
+          height: "3px",
+          backgroundColor: "#28a745",
+          zIndex: 1000,
+          transition: "width 0.3s ease",
+        }}
+      />
+
+      <div
+        className="reading-stats"
+        style={{
+          position: "fixed",
+          top: "10px",
+          right: "10px",
+          backgroundColor: "white",
+          padding: "1rem",
+          borderRadius: "8px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          fontSize: "0.875rem",
+          zIndex: 999,
+          transform:
+            direction.y === "down" ? "translateX(100%)" : "translateX(0)",
+          transition: "transform 0.3s ease",
+        }}
+      >
+        <div>📖 Reading Progress: {progress.toFixed(1)}%</div>
+        <div>⏱️ Time: {formatTime(readingTime)}</div>
+        <div>📝 Words read: ~{wordsRead}</div>
+        <div>🔄 Direction: {direction.y || "stationary"}</div>
+      </div>
+
+      <div ref={articleRef} className="article-content">
+        <h1>Sample Article</h1>
+        <p>
+          This is a sample article to demonstrate the reading progress tracker.
+        </p>
+        {Array.from({ length: 50 }, (_, i) => (
+          <p key={i}>
+            Paragraph {i + 1}: Lorem ipsum dolor sit amet, consectetur
+            adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
+            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit
+            esse cillum dolore eu fugiat nulla pariatur.
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Optimize Performance with Throttling
+
+```tsx
+// ✅ Good: Use appropriate throttle values
+const highFrequency = useScroll({ throttle: 8 }); // For smooth animations
+const standard = useScroll({ throttle: 16 }); // Default 60fps
+const lowFrequency = useScroll({ throttle: 100 }); // For less critical updates
+
+// ❌ Avoid: No throttling for heavy operations
+const unthrottled = useScroll({ throttle: 0 }); // Can cause performance issues
+```
+
+### 2. Enable Features Only When Needed
+
+```tsx
+// ✅ Good: Only track what you need
+const scrollPosition = useScroll({
+  trackDirection: false, // Disable if not needed
+  trackVelocity: false, // Disable if not needed
+});
+
+// ✅ Good: Enable features when necessary
+const animationScroll = useScroll({
+  trackVelocity: true, // For velocity-based animations
+  throttle: 8, // High frequency for smooth animations
+});
+```
+
+### 3. Handle Scroll Lock Carefully
+
+```tsx
+// ✅ Good: Always cleanup scroll lock
+function Modal({ isOpen }: { isOpen: boolean }) {
+  const { setScrollLock } = useScroll();
+
+  useEffect(() => {
+    setScrollLock(isOpen);
+    return () => setScrollLock(false); // Cleanup on unmount
+  }, [isOpen, setScrollLock]);
+}
+
+// ✅ Good: Conditional scroll lock
+const shouldLock = isModalOpen && !isMobile;
+setScrollLock(shouldLock);
+```
+
+### 4. Use Smooth Scrolling Appropriately
+
+```tsx
+// ✅ Good: Respect user preferences
+const prefersReducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)"
+).matches;
+
+const smoothScroll = !prefersReducedMotion;
+scrollToTop(smoothScroll);
+
+// ✅ Good: Provide instant scroll option
+scrollTo(0, targetY, false); // Instant scroll for large distances
+```
+
+### 5. Handle Edge Cases
+
+```tsx
+// ✅ Good: Check for boundary conditions
+const { isAtTop, isAtBottom, scrollToBottom } = useScroll();
+
+// Only show "load more" if not at bottom and has more content
+const showLoadMore = !isAtBottom && hasMoreContent;
+
+// Prevent unnecessary scroll calls
+if (!isAtTop) {
+  scrollToTop();
+}
+```
+
+### 6. Debounce Expensive Operations
+
+```tsx
+// ✅ Good: Debounce expensive operations triggered by scroll
+function useScrollWithDebounce() {
+  const { scrollY } = useScroll();
+  const [debouncedScrollY, setDebouncedScrollY] = useState(scrollY);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedScrollY(scrollY);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [scrollY]);
+
+  return debouncedScrollY;
+}
+```
+
+## TypeScript
+
+The hook is fully typed with comprehensive interfaces:
+
+```tsx
+import {
+  useScroll,
+  ScrollOptions,
+  ScrollResult,
+  ScrollDirection,
+} from "light-hooks";
+
+// Type inference works automatically
+const scrollResult = useScroll();
+// scrollResult: ScrollResult
+
+// Explicit typing (optional)
+const options: ScrollOptions = {
+  target: elementRef.current,
+  throttle: 16,
+  trackDirection: true,
+  trackVelocity: false,
+};
+
+const result: ScrollResult = useScroll(options);
+
+// Custom component with typed props
+interface ScrollIndicatorProps {
+  threshold?: number;
+  onThresholdReached?: (direction: ScrollDirection) => void;
+}
+
+function ScrollIndicator({
+  threshold = 100,
+  onThresholdReached,
+}: ScrollIndicatorProps) {
+  const { scrollY, direction } = useScroll();
+
+  useEffect(() => {
+    if (scrollY > threshold && direction.y) {
+      onThresholdReached?.(direction.y);
+    }
+  }, [scrollY, threshold, direction.y, onThresholdReached]);
+
+  return <div className="scroll-indicator">Scrolled: {scrollY}px</div>;
+}
+```
+
+### Interface Definitions
+
+```tsx
+interface ScrollOptions {
+  target?: HTMLElement | Window | null;
+  throttle?: number;
+  trackDirection?: boolean;
+  trackVelocity?: boolean;
+}
+
+interface ScrollResult {
+  scrollX: number;
+  scrollY: number;
+  isLocked: boolean;
+  direction: { x: ScrollDirection; y: ScrollDirection };
+  velocity: { x: number; y: number };
+  setScrollLock: (locked: boolean) => void;
+  scrollTo: (x: number, y: number, smooth?: boolean) => void;
+  scrollToTop: (smooth?: boolean) => void;
+  scrollToBottom: (smooth?: boolean) => void;
+  scrollBy: (deltaX: number, deltaY: number, smooth?: boolean) => void;
+  isAtTop: boolean;
+  isAtBottom: boolean;
+  scrollHeight: number;
+  scrollWidth: number;
+}
+
+type ScrollDirection = "up" | "down" | "left" | "right" | null;
+```
+
+## Common Issues
+
+### Scroll Lock Issues
+
+```tsx
+// ❌ Problem: Scroll lock not working on mobile
+const { setScrollLock } = useScroll();
+
+// ✅ Solution: Additional mobile handling
+function useScrollLockWithMobile() {
+  const { setScrollLock } = useScroll();
+
+  const setLock = useCallback(
+    (locked: boolean) => {
+      setScrollLock(locked);
+
+      // Additional mobile handling
+      if (locked) {
+        document.addEventListener("touchmove", preventDefault, {
+          passive: false,
+        });
+      } else {
+        document.removeEventListener("touchmove", preventDefault);
+      }
+    },
+    [setScrollLock]
+  );
+
+  const preventDefault = (e: TouchEvent) => e.preventDefault();
+
+  return setLock;
+}
+```
+
+### Performance Issues
+
+```tsx
+// ❌ Problem: Heavy operations on every scroll
+const { scrollY } = useScroll({ throttle: 0 });
+
+useEffect(() => {
+  // Heavy calculation on every scroll event
+  performExpensiveCalculation(scrollY);
+}, [scrollY]);
+
+// ✅ Solution: Proper throttling and debouncing
+const { scrollY } = useScroll({ throttle: 50 });
+
+const debouncedEffect = useMemo(
+  () =>
+    debounce((y: number) => {
+      performExpensiveCalculation(y);
+    }, 200),
+  []
+);
+
+useEffect(() => {
+  debouncedEffect(scrollY);
+}, [scrollY, debouncedEffect]);
+```
+
+### Memory Leaks
+
+```tsx
+// ✅ Good: Hook automatically handles cleanup
+function Component() {
+  const { scrollY } = useScroll();
+  // Event listeners are automatically cleaned up
+  return <div>Scroll: {scrollY}</div>;
+}
+
+// ❌ Avoid: Manual scroll listeners without cleanup
+useEffect(() => {
+  const handleScroll = () => {
+    // Handle scroll
+  };
+
+  window.addEventListener("scroll", handleScroll);
+  // Missing cleanup!
+}, []);
+```
+
+### Server-Side Rendering
+
+```tsx
+// ✅ Good: Handle SSR safely
+function ScrollComponent() {
+  const { scrollY } = useScroll();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div>Loading...</div>;
+  }
+
+  return <div>Scroll position: {scrollY}</div>;
+}
+```
+
+## Advanced Usage
+
+### Custom Scroll Behavior
+
+```tsx
+function useCustomScrollBehavior() {
+  const { scrollY, setScrollLock, scrollTo } = useScroll();
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const customScrollTo = useCallback(
+    async (targetY: number) => {
+      setIsScrolling(true);
+      setScrollLock(true);
+
+      const startY = scrollY;
+      const distance = targetY - startY;
+      const duration = Math.min(Math.abs(distance) / 2, 1000); // Max 1 second
+
+      const startTime = Date.now();
+
+      const animateScroll = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function
+        const easeInOutCubic = (t: number) =>
+          t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
+        const currentY = startY + distance * easeInOutCubic(progress);
+        scrollTo(0, currentY, false);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          setIsScrolling(false);
+          setScrollLock(false);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+    },
+    [scrollY, scrollTo, setScrollLock]
+  );
+
+  return { customScrollTo, isScrolling };
+}
+```
+
+### Scroll Snap Implementation
+
+```tsx
+function useScrollSnap(snapPoints: number[]) {
+  const { scrollY, scrollTo, velocity } = useScroll({ trackVelocity: true });
+  const snapTimeoutRef = useRef<number>();
+
+  useEffect(() => {
+    if (snapTimeoutRef.current) {
+      clearTimeout(snapTimeoutRef.current);
+    }
+
+    // Only snap when velocity is low (user stopped scrolling)
+    if (Math.abs(velocity.y) < 50) {
+      snapTimeoutRef.current = setTimeout(() => {
+        const closestSnap = snapPoints.reduce((closest, snap) => {
+          return Math.abs(snap - scrollY) < Math.abs(closest - scrollY)
+            ? snap
+            : closest;
+        });
+
+        if (Math.abs(closestSnap - scrollY) > 10) {
+          scrollTo(0, closestSnap);
+        }
+      }, 150);
+    }
+
+    return () => {
+      if (snapTimeoutRef.current) {
+        clearTimeout(snapTimeoutRef.current);
+      }
+    };
+  }, [scrollY, velocity.y, snapPoints, scrollTo]);
+}
+```
+
+### Virtual Scrolling Helper
+
+```tsx
+function useVirtualScroll<T>(
+  items: T[],
+  itemHeight: number,
+  containerHeight: number
+) {
+  const { scrollY } = useScroll();
+
+  const startIndex = Math.floor(scrollY / itemHeight);
+  const endIndex = Math.min(
+    startIndex + Math.ceil(containerHeight / itemHeight) + 1,
+    items.length
+  );
+
+  const visibleItems = items.slice(startIndex, endIndex);
+  const offsetY = startIndex * itemHeight;
+  const totalHeight = items.length * itemHeight;
+
+  return {
+    visibleItems,
+    offsetY,
+    totalHeight,
+    startIndex,
+    endIndex,
+  };
+}
+
+// Usage
+function VirtualList({ items }: { items: string[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const ITEM_HEIGHT = 50;
+  const CONTAINER_HEIGHT = 400;
+
+  const { visibleItems, offsetY, totalHeight } = useVirtualScroll(
+    items,
+    ITEM_HEIGHT,
+    CONTAINER_HEIGHT
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: CONTAINER_HEIGHT, overflow: "auto" }}
+    >
+      <div style={{ height: totalHeight, position: "relative" }}>
+        <div style={{ transform: `translateY(${offsetY}px)` }}>
+          {visibleItems.map((item, index) => (
+            <div
+              key={index}
+              style={{
+                height: ITEM_HEIGHT,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 1rem",
+                borderBottom: "1px solid #eee",
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
