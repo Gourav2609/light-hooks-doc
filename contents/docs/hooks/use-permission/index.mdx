@@ -1,0 +1,1039 @@
+---
+title: usePermission
+description: A React hook for managing browser permissions (camera, microphone, notifications, geolocation, etc.) with unified interface for checking and requesting permissions.
+---
+
+The `usePermission` hook provides a comprehensive solution for managing browser permissions in React applications. It offers a unified interface for checking and requesting various browser permissions like camera, microphone, notifications, geolocation, and more, with automatic status monitoring and error handling.
+
+## Basic Usage
+
+### Single Permission
+
+```tsx
+import { usePermission } from "light-hooks";
+
+function CameraAccess() {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission('camera');
+
+  const cameraPermission = permissionStatus[0];
+
+  return (
+    <div>
+      <h2>Camera Access</h2>
+      <p>Status: {cameraPermission?.state || 'Unknown'}</p>
+      
+      {cameraPermission?.state === 'granted' && (
+        <p>✅ Camera access granted!</p>
+      )}
+      
+      {cameraPermission?.state === 'denied' && (
+        <p>❌ Camera access denied</p>
+      )}
+      
+      {cameraPermission?.state === 'prompt' && (
+        <button onClick={requestPermissions} disabled={isLoading}>
+          {isLoading ? 'Requesting...' : 'Request Camera Access'}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Multiple Permissions
+
+```tsx
+function MediaAccess() {
+  const { permissionStatus, requestPermissions, isLoading, error } = usePermission([
+    'camera',
+    'microphone'
+  ]);
+
+  const [cameraStatus, microphoneStatus] = permissionStatus;
+
+  return (
+    <div>
+      <h2>Media Permissions</h2>
+      
+      <div>
+        <h3>Camera: {cameraStatus?.state || 'Unknown'}</h3>
+        <h3>Microphone: {microphoneStatus?.state || 'Unknown'}</h3>
+      </div>
+
+      {error && (
+        <p style={{ color: 'red' }}>Error: {error}</p>
+      )}
+
+      <button onClick={requestPermissions} disabled={isLoading}>
+        {isLoading ? 'Requesting...' : 'Request Media Access'}
+      </button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+The hook accepts different types of permission inputs:
+
+| Type                     | Description                                    | Example                                    |
+| ------------------------ | ---------------------------------------------- | ------------------------------------------ |
+| `PermissionName`         | Single permission name                         | `usePermission('camera')`                  |
+| `PermissionDescriptor`   | Permission with additional options             | `usePermission({ name: 'midi', sysex: true })` |
+| `Array`                  | Multiple permissions                           | `usePermission(['camera', 'microphone'])` |
+
+### usePermissionOptions Type
+
+```tsx
+type usePermissionOptions = 
+  | PermissionName           // Single permission name
+  | PermissionDescriptor     // Permission with options
+  | PermissionType[];        // Array of permissions
+```
+
+### Return Value
+
+Returns a `usePermissionResult` object with:
+
+| Property            | Type                     | Description                                      |
+| ------------------- | ------------------------ | ------------------------------------------------ |
+| `permissionStatus`  | `PermissionStatus[]`     | Array of current permission statuses             |
+| `requestPermissions` | `() => Promise<void>`   | Function to request permissions from user        |
+| `checkPermissions`  | `() => Promise<void>`    | Function to check status without requesting      |
+| `isLoading`         | `boolean`                | Whether permission operations are in progress    |
+| `error`             | `string \| null`         | Error message if operations failed               |
+
+### Permission States
+
+Each `PermissionStatus` has a `state` property with possible values:
+
+| State      | Description                                           |
+| ---------- | ----------------------------------------------------- |
+| `'granted'` | User has granted permission                          |
+| `'denied'`  | User has denied permission                           |
+| `'prompt'`  | Browser will prompt user when permission is needed  |
+
+### Supported Permissions
+
+| Permission           | Description                                      | Additional Options |
+| -------------------- | ------------------------------------------------ | ------------------ |
+| `'camera'`           | Camera access for video capture                 | -                  |
+| `'microphone'`       | Microphone access for audio capture             | -                  |
+| `'notifications'`    | Show browser notifications                       | -                  |
+| `'geolocation'`      | Access device location                           | -                  |
+| `'midi'`             | MIDI device access                               | `sysex: boolean`   |
+| `'persistent-storage'` | Persistent storage quota                       | -                  |
+| `'push'`             | Push notifications (requires service worker)    | -                  |
+
+## Examples
+
+### Notification Permission Manager
+
+```tsx
+function NotificationManager() {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission('notifications');
+  
+  const notificationPermission = permissionStatus[0];
+  const [message, setMessage] = useState('');
+
+  const sendNotification = () => {
+    if (notificationPermission?.state === 'granted') {
+      new Notification('Test Notification', {
+        body: message || 'Hello from your app!',
+        icon: '/icon.png'
+      });
+    }
+  };
+
+  return (
+    <div className="notification-manager">
+      <h2>Notification Manager</h2>
+      
+      <div className="status">
+        <p>Permission Status: <span className={notificationPermission?.state}>
+          {notificationPermission?.state || 'Unknown'}
+        </span></p>
+      </div>
+
+      {notificationPermission?.state === 'prompt' && (
+        <button onClick={requestPermissions} disabled={isLoading}>
+          {isLoading ? 'Requesting...' : 'Enable Notifications'}
+        </button>
+      )}
+
+      {notificationPermission?.state === 'granted' && (
+        <div className="notification-controls">
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Enter notification message"
+          />
+          <button onClick={sendNotification}>
+            Send Test Notification
+          </button>
+        </div>
+      )}
+
+      {notificationPermission?.state === 'denied' && (
+        <div className="denied-help">
+          <p>❌ Notifications are blocked</p>
+          <p>To enable notifications:</p>
+          <ol>
+            <li>Click the lock icon in your browser's address bar</li>
+            <li>Change notifications to "Allow"</li>
+            <li>Refresh the page</li>
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Location Permission with Map
+
+```tsx
+function LocationTracker() {
+  const { permissionStatus, requestPermissions, isLoading, error } = usePermission('geolocation');
+  const [position, setPosition] = useState<GeolocationPosition | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const locationPermission = permissionStatus[0];
+
+  const getCurrentLocation = async () => {
+    if (locationPermission?.state !== 'granted') {
+      await requestPermissions();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition(pos);
+        setLocationError(null);
+      },
+      (err) => {
+        setLocationError(err.message);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  return (
+    <div className="location-tracker">
+      <h2>Location Tracker</h2>
+      
+      <div className="permission-status">
+        <p>Location Permission: {locationPermission?.state || 'Unknown'}</p>
+        {error && <p className="error">Permission Error: {error}</p>}
+        {locationError && <p className="error">Location Error: {locationError}</p>}
+      </div>
+
+      <button onClick={getCurrentLocation} disabled={isLoading}>
+        {isLoading ? 'Getting Location...' : 'Get My Location'}
+      </button>
+
+      {position && (
+        <div className="location-info">
+          <h3>Current Location</h3>
+          <p>Latitude: {position.coords.latitude.toFixed(6)}</p>
+          <p>Longitude: {position.coords.longitude.toFixed(6)}</p>
+          <p>Accuracy: {position.coords.accuracy.toFixed(0)} meters</p>
+          <p>Timestamp: {new Date(position.timestamp).toLocaleString()}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Media Device Manager
+
+```tsx
+function MediaDeviceManager() {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission([
+    'camera',
+    'microphone'
+  ]);
+
+  const [cameraPermission, microphonePermission] = permissionStatus;
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const startCamera = async () => {
+    try {
+      if (cameraPermission?.state !== 'granted') {
+        await requestPermissions();
+        return;
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: microphonePermission?.state === 'granted'
+      });
+
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Failed to start camera:', error);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  return (
+    <div className="media-manager">
+      <h2>Camera & Microphone Manager</h2>
+      
+      <div className="permissions-status">
+        <div className="permission-item">
+          <span>Camera: </span>
+          <span className={`status ${cameraPermission?.state}`}>
+            {cameraPermission?.state || 'Unknown'}
+          </span>
+        </div>
+        <div className="permission-item">
+          <span>Microphone: </span>
+          <span className={`status ${microphonePermission?.state}`}>
+            {microphonePermission?.state || 'Unknown'}
+          </span>
+        </div>
+      </div>
+
+      <div className="controls">
+        {!stream ? (
+          <button onClick={startCamera} disabled={isLoading}>
+            {isLoading ? 'Starting...' : 'Start Camera'}
+          </button>
+        ) : (
+          <button onClick={stopCamera}>Stop Camera</button>
+        )}
+        
+        <button onClick={requestPermissions} disabled={isLoading}>
+          {isLoading ? 'Requesting...' : 'Request All Permissions'}
+        </button>
+      </div>
+
+      {stream && (
+        <div className="video-container">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### MIDI Device Access
+
+```tsx
+function MIDIController() {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission({
+    name: 'midi',
+    sysex: true
+  });
+
+  const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null>(null);
+  const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
+
+  const midiPermission = permissionStatus[0];
+
+  const connectMIDI = async () => {
+    try {
+      if (midiPermission?.state !== 'granted') {
+        await requestPermissions();
+        return;
+      }
+
+      const access = await navigator.requestMIDIAccess({ sysex: true });
+      setMidiAccess(access);
+
+      // List connected devices
+      const devices: string[] = [];
+      access.inputs.forEach((input) => {
+        devices.push(`Input: ${input.name}`);
+      });
+      access.outputs.forEach((output) => {
+        devices.push(`Output: ${output.name}`);
+      });
+      setConnectedDevices(devices);
+
+    } catch (error) {
+      console.error('Failed to access MIDI devices:', error);
+    }
+  };
+
+  return (
+    <div className="midi-controller">
+      <h2>MIDI Device Controller</h2>
+      
+      <p>MIDI Permission: {midiPermission?.state || 'Unknown'}</p>
+
+      <button onClick={connectMIDI} disabled={isLoading}>
+        {isLoading ? 'Connecting...' : 'Connect MIDI Devices'}
+      </button>
+
+      {midiAccess && (
+        <div className="device-list">
+          <h3>Connected MIDI Devices</h3>
+          {connectedDevices.length > 0 ? (
+            <ul>
+              {connectedDevices.map((device, index) => (
+                <li key={index}>{device}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No MIDI devices found</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Permission Status Dashboard
+
+```tsx
+function PermissionDashboard() {
+  const { permissionStatus, requestPermissions, checkPermissions, isLoading } = usePermission([
+    'camera',
+    'microphone',
+    'notifications',
+    'geolocation',
+    'persistent-storage'
+  ]);
+
+  const permissionNames = ['camera', 'microphone', 'notifications', 'geolocation', 'persistent-storage'];
+
+  const getStatusIcon = (state: PermissionState | undefined) => {
+    switch (state) {
+      case 'granted': return '✅';
+      case 'denied': return '❌';
+      case 'prompt': return '❓';
+      default: return '⏳';
+    }
+  };
+
+  const getStatusColor = (state: PermissionState | undefined) => {
+    switch (state) {
+      case 'granted': return '#4caf50';
+      case 'denied': return '#f44336';
+      case 'prompt': return '#ff9800';
+      default: return '#9e9e9e';
+    }
+  };
+
+  return (
+    <div className="permission-dashboard">
+      <h2>Permission Status Dashboard</h2>
+      
+      <div className="actions">
+        <button onClick={checkPermissions} disabled={isLoading}>
+          {isLoading ? 'Checking...' : 'Refresh Status'}
+        </button>
+        <button onClick={requestPermissions} disabled={isLoading}>
+          {isLoading ? 'Requesting...' : 'Request All Permissions'}
+        </button>
+      </div>
+
+      <div className="permissions-grid">
+        {permissionNames.map((name, index) => {
+          const status = permissionStatus[index];
+          return (
+            <div 
+              key={name} 
+              className="permission-card"
+              style={{ borderColor: getStatusColor(status?.state) }}
+            >
+              <div className="permission-header">
+                <span className="icon">{getStatusIcon(status?.state)}</span>
+                <h3>{name}</h3>
+              </div>
+              <p className="status" style={{ color: getStatusColor(status?.state) }}>
+                {status?.state || 'Unknown'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="legend">
+        <h3>Permission States</h3>
+        <div className="legend-items">
+          <span>✅ Granted - Permission is allowed</span>
+          <span>❌ Denied - Permission is blocked</span>
+          <span>❓ Prompt - Will ask when needed</span>
+          <span>⏳ Unknown - Status not determined</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Persistent Storage Manager
+
+```tsx
+function StorageManager() {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission('persistent-storage');
+  const [storageInfo, setStorageInfo] = useState<{
+    quota: number;
+    usage: number;
+    persistent: boolean;
+  } | null>(null);
+
+  const storagePermission = permissionStatus[0];
+
+  const checkStorageInfo = async () => {
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      const estimate = await navigator.storage.estimate();
+      const persistent = await navigator.storage.persisted();
+      
+      setStorageInfo({
+        quota: estimate.quota || 0,
+        usage: estimate.usage || 0,
+        persistent
+      });
+    }
+  };
+
+  const requestPersistentStorage = async () => {
+    await requestPermissions();
+    await checkStorageInfo();
+  };
+
+  useEffect(() => {
+    checkStorageInfo();
+  }, []);
+
+  const formatBytes = (bytes: number) => {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  return (
+    <div className="storage-manager">
+      <h2>Persistent Storage Manager</h2>
+      
+      <div className="permission-status">
+        <p>Storage Permission: {storagePermission?.state || 'Unknown'}</p>
+        <p>Persistent Storage: {storageInfo?.persistent ? 'Enabled' : 'Disabled'}</p>
+      </div>
+
+      {storageInfo && (
+        <div className="storage-info">
+          <h3>Storage Information</h3>
+          <p>Used: {formatBytes(storageInfo.usage)}</p>
+          <p>Available: {formatBytes(storageInfo.quota)}</p>
+          <div className="usage-bar">
+            <div 
+              className="usage-fill"
+              style={{
+                width: `${(storageInfo.usage / storageInfo.quota) * 100}%`,
+                backgroundColor: storageInfo.persistent ? '#4caf50' : '#ff9800'
+              }}
+            />
+          </div>
+          <p className="usage-percent">
+            {((storageInfo.usage / storageInfo.quota) * 100).toFixed(1)}% used
+          </p>
+        </div>
+      )}
+
+      <div className="actions">
+        <button onClick={requestPersistentStorage} disabled={isLoading}>
+          {isLoading ? 'Requesting...' : 'Request Persistent Storage'}
+        </button>
+        <button onClick={checkStorageInfo}>
+          Refresh Storage Info
+        </button>
+      </div>
+
+      <div className="storage-explanation">
+        <h3>About Persistent Storage</h3>
+        <p>
+          Persistent storage prevents your data from being automatically cleared
+          by the browser when storage space is low. This is useful for offline
+          applications and storing important user data.
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Check Before Requesting
+
+```tsx
+// ✅ Good: Check status before requesting
+const { permissionStatus, requestPermissions } = usePermission('camera');
+const cameraPermission = permissionStatus[0];
+
+const handleCameraAccess = () => {
+  if (cameraPermission?.state === 'granted') {
+    // Use camera directly
+    startCamera();
+  } else if (cameraPermission?.state === 'prompt') {
+    // Request permission first
+    requestPermissions().then(() => {
+      if (permissionStatus[0]?.state === 'granted') {
+        startCamera();
+      }
+    });
+  } else {
+    // Handle denied state
+    showPermissionDeniedMessage();
+  }
+};
+
+// ❌ Avoid: Requesting without checking
+const bad = () => {
+  requestPermissions(); // May show unnecessary prompts
+};
+```
+
+### 2. Handle Permission States Appropriately
+
+```tsx
+// ✅ Good: Provide guidance for each state
+function PermissionHandler() {
+  const { permissionStatus, requestPermissions } = usePermission('notifications');
+  const permission = permissionStatus[0];
+
+  switch (permission?.state) {
+    case 'granted':
+      return <div>✅ Notifications enabled!</div>;
+    
+    case 'denied':
+      return (
+        <div>
+          ❌ Notifications blocked. 
+          <a href="/help/enable-notifications">Learn how to enable</a>
+        </div>
+      );
+    
+    case 'prompt':
+      return (
+        <button onClick={requestPermissions}>
+          Enable Notifications
+        </button>
+      );
+    
+    default:
+      return <div>⏳ Checking permission status...</div>;
+  }
+}
+```
+
+### 3. Group Related Permissions
+
+```tsx
+// ✅ Good: Request related permissions together
+const mediaPermissions = usePermission(['camera', 'microphone']);
+
+// ✅ Good: Separate unrelated permissions
+const cameraPermission = usePermission('camera');
+const notificationPermission = usePermission('notifications');
+
+// ❌ Avoid: Mixing unrelated permissions unnecessarily
+const mixed = usePermission(['camera', 'notifications', 'geolocation']); // Too broad
+```
+
+### 4. Provide Fallback Options
+
+```tsx
+// ✅ Good: Offer alternatives when permission is denied
+function MediaCapture() {
+  const { permissionStatus, requestPermissions } = usePermission('camera');
+  const cameraPermission = permissionStatus[0];
+
+  if (cameraPermission?.state === 'denied') {
+    return (
+      <div>
+        <p>Camera access is blocked</p>
+        <button onClick={() => document.getElementById('file-input')?.click()}>
+          Upload Photo Instead
+        </button>
+        <input
+          id="file-input"
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={requestPermissions}>
+      Enable Camera
+    </button>
+  );
+}
+```
+
+### 5. Monitor Permission Changes
+
+```tsx
+// ✅ Good: The hook automatically monitors changes
+function PermissionMonitor() {
+  const { permissionStatus } = usePermission('notifications');
+  const permission = permissionStatus[0];
+
+  useEffect(() => {
+    // Automatically called when permission state changes
+    console.log('Permission state changed:', permission?.state);
+  }, [permission?.state]);
+
+  return <div>Status: {permission?.state}</div>;
+}
+```
+
+### 6. Handle Errors Gracefully
+
+```tsx
+// ✅ Good: Handle permission errors
+function RobustPermissionHandler() {
+  const { permissionStatus, requestPermissions, error } = usePermission('camera');
+
+  if (error) {
+    return (
+      <div className="error">
+        <p>Permission error: {error}</p>
+        <button onClick={() => window.location.reload()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={requestPermissions}>
+      Request Camera Access
+    </button>
+  );
+}
+```
+
+## TypeScript
+
+The hook is fully typed with comprehensive interfaces:
+
+```tsx
+import { usePermission, usePermissionResult, usePermissionOptions } from "light-hooks";
+
+// Type inference works automatically
+const result = usePermission('camera');
+// result: usePermissionResult
+
+// Explicit typing (optional)
+const options: usePermissionOptions = ['camera', 'microphone'];
+const explicitResult: usePermissionResult = usePermission(options);
+
+// Custom component with typed props
+interface PermissionGateProps {
+  permission: PermissionName;
+  onGranted: () => void;
+  onDenied: () => void;
+  children: React.ReactNode;
+}
+
+function PermissionGate({ 
+  permission, 
+  onGranted, 
+  onDenied, 
+  children 
+}: PermissionGateProps) {
+  const { permissionStatus, requestPermissions } = usePermission(permission);
+  const status = permissionStatus[0];
+
+  useEffect(() => {
+    if (status?.state === 'granted') {
+      onGranted();
+    } else if (status?.state === 'denied') {
+      onDenied();
+    }
+  }, [status?.state, onGranted, onDenied]);
+
+  if (status?.state === 'granted') {
+    return <>{children}</>;
+  }
+
+  return (
+    <button onClick={requestPermissions}>
+      Grant {permission} permission
+    </button>
+  );
+}
+```
+
+### Interface Definitions
+
+```tsx
+interface usePermissionResult {
+  permissionStatus: PermissionStatus[];
+  requestPermissions: () => Promise<void>;
+  checkPermissions: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+}
+
+type usePermissionOptions = 
+  | PermissionName 
+  | PermissionDescriptor 
+  | PermissionType[];
+
+// Browser-native interfaces
+interface PermissionStatus {
+  state: PermissionState; // 'granted' | 'denied' | 'prompt'
+  name: string;
+  addEventListener(type: 'change', listener: () => void): void;
+  removeEventListener(type: 'change', listener: () => void): void;
+}
+```
+
+## Common Issues
+
+### Permission Request Timing
+
+```tsx
+// ❌ Problem: Requesting permissions on page load
+useEffect(() => {
+  requestPermissions(); // Unexpected prompts
+}, []);
+
+// ✅ Solution: Request on user interaction
+<button onClick={requestPermissions}>
+  Enable Camera
+</button>
+```
+
+### Browser Compatibility
+
+```tsx
+// ✅ Good: Check for API support
+function PermissionWrapper() {
+  if (!('permissions' in navigator)) {
+    return <div>Permissions API not supported</div>;
+  }
+
+  return <PermissionComponent />;
+}
+
+// ✅ Good: Handle unsupported permissions gracefully
+const { permissionStatus, error } = usePermission('midi');
+if (error?.includes('not supported')) {
+  return <div>MIDI not supported in this browser</div>;
+}
+```
+
+### Service Worker Requirements
+
+```tsx
+// ✅ Good: Check for service worker before requesting push
+function PushNotifications() {
+  const { permissionStatus, requestPermissions } = usePermission('push');
+
+  const handleRequest = async () => {
+    if (!('serviceWorker' in navigator)) {
+      alert('Service workers not supported');
+      return;
+    }
+
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+      await requestPermissions();
+    } catch (error) {
+      console.error('Failed to register service worker:', error);
+    }
+  };
+
+  return <button onClick={handleRequest}>Enable Push Notifications</button>;
+}
+```
+
+### Memory Leaks Prevention
+
+```tsx
+// ✅ Good: Hook automatically handles cleanup
+function Component() {
+  const { permissionStatus } = usePermission('camera');
+  // Event listeners are automatically cleaned up
+  return <div>{permissionStatus[0]?.state}</div>;
+}
+
+// ❌ Avoid: Manual event listeners without cleanup
+useEffect(() => {
+  navigator.permissions.query({ name: 'camera' }).then(status => {
+    status.addEventListener('change', handler); // Need manual cleanup
+  });
+}, []);
+```
+
+## Advanced Usage
+
+### Permission State Machine
+
+```tsx
+function PermissionStateMachine({ permission }: { permission: PermissionName }) {
+  const { permissionStatus, requestPermissions, isLoading } = usePermission(permission);
+  const [userAction, setUserAction] = useState<'none' | 'requesting' | 'completed'>('none');
+  
+  const status = permissionStatus[0];
+
+  const handleRequest = async () => {
+    setUserAction('requesting');
+    await requestPermissions();
+    setUserAction('completed');
+  };
+
+  // State-based rendering
+  const getContent = () => {
+    if (isLoading) return <div>⏳ Loading...</div>;
+    
+    switch (status?.state) {
+      case 'granted':
+        return <div>✅ {permission} access granted</div>;
+        
+      case 'denied':
+        if (userAction === 'completed') {
+          return (
+            <div>
+              ❌ Permission denied. Please enable in browser settings.
+              <button onClick={() => window.location.reload()}>
+                Retry
+              </button>
+            </div>
+          );
+        }
+        return <div>❌ {permission} access was previously denied</div>;
+        
+      case 'prompt':
+        return (
+          <button onClick={handleRequest} disabled={userAction === 'requesting'}>
+            {userAction === 'requesting' ? 'Requesting...' : `Enable ${permission}`}
+          </button>
+        );
+        
+      default:
+        return <div>⏳ Checking {permission} permission...</div>;
+    }
+  };
+
+  return <div className="permission-state-machine">{getContent()}</div>;
+}
+```
+
+### Conditional Permission Loading
+
+```tsx
+function ConditionalPermissions({ features }: { features: string[] }) {
+  const permissions = useMemo(() => {
+    const perms: PermissionName[] = [];
+    
+    if (features.includes('video-call')) {
+      perms.push('camera', 'microphone');
+    }
+    if (features.includes('notifications')) {
+      perms.push('notifications');
+    }
+    if (features.includes('location')) {
+      perms.push('geolocation');
+    }
+    
+    return perms;
+  }, [features]);
+
+  const { permissionStatus, requestPermissions } = usePermission(permissions);
+
+  return (
+    <div>
+      <h3>Required Permissions for {features.join(', ')}</h3>
+      {permissions.map((permission, index) => (
+        <div key={permission}>
+          {permission}: {permissionStatus[index]?.state || 'Unknown'}
+        </div>
+      ))}
+      <button onClick={requestPermissions}>
+        Request All Permissions
+      </button>
+    </div>
+  );
+}
+```
+
+### Permission-Based Feature Gates
+
+```tsx
+function FeatureGate({ 
+  requiredPermissions, 
+  children,
+  fallback 
+}: {
+  requiredPermissions: PermissionName[];
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
+  const { permissionStatus, requestPermissions } = usePermission(requiredPermissions);
+  
+  const allGranted = permissionStatus.every(status => status?.state === 'granted');
+  const anyDenied = permissionStatus.some(status => status?.state === 'denied');
+
+  if (allGranted) {
+    return <>{children}</>;
+  }
+
+  if (anyDenied) {
+    return fallback || <div>Some required permissions are denied</div>;
+  }
+
+  return (
+    <div className="permission-gate">
+      <p>This feature requires the following permissions:</p>
+      <ul>
+        {requiredPermissions.map((permission, index) => (
+          <li key={permission}>
+            {permission}: {permissionStatus[index]?.state || 'Unknown'}
+          </li>
+        ))}
+      </ul>
+      <button onClick={requestPermissions}>
+        Grant Permissions
+      </button>
+    </div>
+  );
+}
+
+// Usage
+function VideoCallApp() {
+  return (
+    <FeatureGate 
+      requiredPermissions={['camera', 'microphone']}
+      fallback={<div>Video calling requires camera and microphone access</div>}
+    >
+      <VideoCallInterface />
+    </FeatureGate>
+  );
+}
+```
