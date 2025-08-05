@@ -37,7 +37,7 @@ export const ROUTES: EachRoute[] = [
     title: "Hooks",
     href: "/hooks",
     items: [
-      { title: "isMobile", href: "/is-mobile" },
+      { title: "useIsMobile", href: "/use-is-mobile" },
       { title: "useClickOutside", href: "/use-click-outside" },
       { title: "useCountdown", href: "/use-countdown" },
       // {
@@ -52,9 +52,10 @@ export const ROUTES: EachRoute[] = [
         noLink: true,
         tag: "New",
       },
-      { title: "useHotkey", href: "/use-hotkey", tag: "New" },
+      { title: "useHotkey", href: "/use-hotkey",  },
+      { title: "useLocalStorage", href: "/use-local-storage", tag: "New" },
       { title: "usePermission", href: "/use-permission", tag: "New" },
-      { title: "usePing", href: "/use-ping" },
+      { title: "usePing", href: "/use-ping" , tag: "Hot" },
     ],
   },
   { title: "Contributing", href: "/contributing" },

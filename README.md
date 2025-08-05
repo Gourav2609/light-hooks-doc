@@ -32,17 +32,18 @@ Light Hooks is a collection of carefully crafted React hooks designed to:
 
 Visit the [npm package](https://www.npmjs.com/package/light-hooks) to get started with the hooks.
 
-## Learn More
+## Documentation Resources
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used in this documentation site:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
+- [Light Hooks GitHub](https://github.com/Gourav2609/light-hooks) - Main hooks library repository
+- [Light Hooks npm Package](https://www.npmjs.com/package/light-hooks) - Install and use the hooks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
+We welcome contributions to both the hooks library and documentation! Check out our [Contributing Guide](/docs/contributing) for more information.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This documentation site is deployed on [Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) and includes analytics to help us improve the documentation experience.

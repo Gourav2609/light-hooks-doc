@@ -10,6 +10,7 @@ import { SheetClose } from "@/components/ui/sheet";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Tag } from "@/components/ui/tag";
 
 export default function SubLink({
   title,
@@ -32,12 +33,10 @@ export default function SubLink({
       activeClassName="text-primary dark:font-medium font-semibold"
       href={href}
     >
-      {title}
-      {tag && (
-        <span className="dark:bg-blue-700 bg-blue-500 rounded-md px-1.5 py-0.5 mx-2 text-xs text-white !font-normal">
-          {tag}
-        </span>
-      )}
+      <span className="flex items-center gap-2">
+        {title}
+        {tag && <Tag tag={tag} />}
+      </span>
     </Anchor>
   );
 
@@ -49,12 +48,10 @@ export default function SubLink({
     )
   ) : (
     <h4 className="font-medium sm:text-sm text-primary">
-      {title}
-      {tag && (
-        <span className="dark:bg-blue-700 bg-blue-500 rounded-md px-1.5 py-0.5 mx-2 text-xs text-white !font-normal">
-          {tag}
-        </span>
-      )}
+      <span className="flex items-center gap-2">
+        {title}
+        {tag && <Tag tag={tag} />}
+      </span>
     </h4>
   );
 
