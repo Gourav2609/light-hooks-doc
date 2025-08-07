@@ -50,6 +50,7 @@ export const ROUTES: EachRoute[] = [
       { title: "useLocalStorage", href: "/use-local-storage" },
       { title: "usePermission", href: "/use-permission" },
       { title: "usePing", href: "/use-ping", tag: "Hot" },
+      { title: "usePolling", href: "/use-polling", tag: "New" },
       { title: "useScroll", href: "/use-scroll" },
       { title: "useThrottle", href: "/use-throttle", tag: "New" },
       { title: "useToggle", href: "/use-toggle", tag: "New" },

@@ -1,0 +1,1064 @@
+---
+title: usePolling
+description: A React hook for polling data at regular intervals or using long polling with comprehensive error handling, retry logic, and proper cleanup.
+---
+
+The `usePolling` hook provides a comprehensive solution for data polling in React applications. It supports both interval-based and long polling patterns, includes automatic error handling with retry logic, and offers complete control over the polling lifecycle with proper cleanup.
+
+## Basic Usage
+
+### Simple Interval Polling
+
+```tsx
+import { usePolling } from "light-hooks";
+
+function DataDashboard() {
+  const { data, isLoading, error } = usePolling({
+    fn: () => fetch("/api/dashboard-data").then((r) => r.json()),
+    interval: 5000, // Poll every 5 seconds
+  });
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      <h2>Dashboard {isLoading && <span>🔄</span>}</h2>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+}
+```
+
+### Manual Control with Error Handling
+
+```tsx
+function UserStatus() {
+  const { data, isLoading, isRunning, error, start, stop, reset, retryCount } =
+    usePolling({
+      fn: async () => {
+        const response = await fetch("/api/user/status");
+        if (!response.ok) throw new Error("Failed to fetch user status");
+        return response.json();
+      },
+      interval: 3000,
+      autoStart: false,
+      maxRetries: 5,
+      onError: (error, count) => {
+        console.error(`Polling failed (attempt ${count}):`, error);
+      },
+    });
+
+  return (
+    <div>
+      <div className="controls">
+        <button onClick={start} disabled={isRunning}>
+          Start Polling
+        </button>
+        <button onClick={stop} disabled={!isRunning}>
+          Stop Polling
+        </button>
+        <button onClick={reset} disabled={!error}>
+          Reset Errors
+        </button>
+      </div>
+
+      <div className="status">
+        <p>Status: {isRunning ? "🟢 Running" : "⏸️ Stopped"}</p>
+        <p>Loading: {isLoading ? "Yes" : "No"}</p>
+        {retryCount > 0 && <p>Retries: {retryCount}</p>}
+      </div>
+
+      {error && <div className="error">Error: {error.message}</div>}
+
+      {data && (
+        <div className="data">
+          <h3>User Status</h3>
+          <p>Online: {data.online ? "Yes" : "No"}</p>
+          <p>Last seen: {data.lastSeen}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+The hook accepts a `UsePollingOptions` configuration object:
+
+| Property     | Type                                         | Default      | Description                                     |
+| ------------ | -------------------------------------------- | ------------ | ----------------------------------------------- |
+| `fn`         | `() => Promise<T>`                           | -            | Function that returns a promise with data       |
+| `type`       | `"interval" \| "long"`                       | `"interval"` | Type of polling strategy                        |
+| `interval`   | `number`                                     | `1000`       | Interval between polls in milliseconds          |
+| `autoStart`  | `boolean`                                    | `true`       | Whether to start polling automatically          |
+| `maxRetries` | `number`                                     | `3`          | Maximum number of retry attempts on error       |
+| `retryDelay` | `number`                                     | `1000`       | Delay between retry attempts in milliseconds    |
+| `onError`    | `(error: Error, retryCount: number) => void` | -            | Callback function when polling encounters error |
+| `onSuccess`  | `(data: T) => void`                          | -            | Callback function when polling succeeds         |
+
+### Return Value
+
+Returns a `UsePollingResults` object with:
+
+| Property     | Type                  | Description                                   |
+| ------------ | --------------------- | --------------------------------------------- |
+| `data`       | `T \| null`           | Current data from polling                     |
+| `isLoading`  | `boolean`             | Whether a request is currently in progress    |
+| `isRunning`  | `boolean`             | Whether polling is currently active           |
+| `error`      | `Error \| null`       | Any error that occurred during polling        |
+| `retryCount` | `number`              | Number of consecutive failed attempts         |
+| `start`      | `() => void`          | Function to start polling                     |
+| `stop`       | `() => void`          | Function to stop polling                      |
+| `poll`       | `() => Promise<void>` | Function to manually trigger a single poll    |
+| `reset`      | `() => void`          | Function to reset error state and retry count |
+
+### Polling Types
+
+| Type         | Description                                        | Use Case                            |
+| ------------ | -------------------------------------------------- | ----------------------------------- |
+| `"interval"` | Regular interval-based polling with fixed delays   | Status updates, metrics, dashboards |
+| `"long"`     | Long polling - immediate retry after each response | Real-time updates, chat messages    |
+
+## Examples
+
+### Real-Time Chat Messages
+
+```tsx
+function ChatMessages({ roomId }: { roomId: string }) {
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const { data, isLoading, error, isRunning } = usePolling({
+    fn: async () => {
+      const response = await fetch(
+        `/api/chat/${roomId}/messages?since=${Date.now()}`
+      );
+      return response.json();
+    },
+    type: "long", // Long polling for real-time feel
+    interval: 100, // Small delay between long poll requests
+    onSuccess: (newMessages) => {
+      if (newMessages.length > 0) {
+        setMessages((prev) => [...prev, ...newMessages]);
+      }
+    },
+    onError: (error, retryCount) => {
+      console.error(`Failed to fetch messages (attempt ${retryCount}):`, error);
+    },
+  });
+
+  return (
+    <div className="chat-container">
+      <div className="chat-header">
+        <h3>Chat Room {roomId}</h3>
+        <div className="connection-status">
+          {isRunning ? (
+            <span className="online">🟢 Connected</span>
+          ) : (
+            <span className="offline">🔴 Disconnected</span>
+          )}
+          {isLoading && <span className="loading">⏳</span>}
+        </div>
+      </div>
+
+      <div className="messages">
+        {messages.map((message, index) => (
+          <div key={index} className="message">
+            <strong>{message.user}:</strong> {message.text}
+            <small>{new Date(message.timestamp).toLocaleTimeString()}</small>
+          </div>
+        ))}
+      </div>
+
+      {error && (
+        <div className="error-banner">Connection error: {error.message}</div>
+      )}
+    </div>
+  );
+}
+```
+
+### Server Health Monitor
+
+```tsx
+function ServerHealthMonitor() {
+  const { data, isLoading, error, isRunning, retryCount } = usePolling({
+    fn: async () => {
+      const response = await fetch("/api/health");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${data.message}`);
+      }
+
+      return data;
+    },
+    interval: 10000, // Check every 10 seconds
+    maxRetries: 5,
+    retryDelay: 2000,
+    onError: (error, count) => {
+      // Send alert if server is down for multiple attempts
+      if (count >= 3) {
+        console.error("SERVER ALERT: Multiple health check failures", error);
+      }
+    },
+  });
+
+  const getHealthStatus = () => {
+    if (error) return { status: "down", color: "red" };
+    if (!data) return { status: "unknown", color: "gray" };
+    return {
+      status: data.status || "unknown",
+      color: data.status === "healthy" ? "green" : "orange",
+    };
+  };
+
+  const healthStatus = getHealthStatus();
+
+  return (
+    <div className="health-monitor">
+      <h2>Server Health Monitor</h2>
+
+      <div className="status-display">
+        <div
+          className="status-indicator"
+          style={{ backgroundColor: healthStatus.color }}
+        >
+          {healthStatus.status.toUpperCase()}
+        </div>
+
+        <div className="status-details">
+          <p>Status: {healthStatus.status}</p>
+          <p>Monitoring: {isRunning ? "Active" : "Inactive"}</p>
+          <p>Last check: {isLoading ? "Checking..." : "Complete"}</p>
+          {retryCount > 0 && <p>Failed attempts: {retryCount}</p>}
+        </div>
+      </div>
+
+      {data && (
+        <div className="metrics">
+          <h3>Server Metrics</h3>
+          <div className="metrics-grid">
+            <div className="metric">
+              <label>CPU Usage</label>
+              <span>{data.metrics?.cpu || "N/A"}%</span>
+            </div>
+            <div className="metric">
+              <label>Memory Usage</label>
+              <span>{data.metrics?.memory || "N/A"}%</span>
+            </div>
+            <div className="metric">
+              <label>Uptime</label>
+              <span>{data.uptime || "N/A"}</span>
+            </div>
+            <div className="metric">
+              <label>Response Time</label>
+              <span>{data.responseTime || "N/A"}ms</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-details">
+          <h3>Error Details</h3>
+          <p>{error.message}</p>
+          <small>Retry attempts: {retryCount}</small>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Stock Price Tracker
+
+```tsx
+function StockTracker({ symbols }: { symbols: string[] }) {
+  const [selectedSymbol, setSelectedSymbol] = useState(symbols[0]);
+  const [priceHistory, setPriceHistory] = useState<
+    Array<{ time: number; price: number }>
+  >([]);
+
+  const { data, isLoading, error, isRunning, start, stop } = usePolling({
+    fn: async () => {
+      const response = await fetch(`/api/stocks/${selectedSymbol}/price`);
+      if (!response.ok) throw new Error("Failed to fetch stock price");
+      return response.json();
+    },
+    interval: 2000, // Update every 2 seconds during trading hours
+    onSuccess: (data) => {
+      setPriceHistory((prev) => [
+        ...prev.slice(-50), // Keep last 50 price points
+        { time: Date.now(), price: data.price },
+      ]);
+    },
+    onError: (error) => {
+      console.error("Stock price fetch failed:", error);
+    },
+  });
+
+  const currentPrice = data?.price;
+  const previousPrice = priceHistory[priceHistory.length - 2]?.price;
+  const priceChange =
+    currentPrice && previousPrice ? currentPrice - previousPrice : 0;
+  const priceChangePercent = previousPrice
+    ? (priceChange / previousPrice) * 100
+    : 0;
+
+  return (
+    <div className="stock-tracker">
+      <div className="stock-header">
+        <h2>Stock Price Tracker</h2>
+        <div className="controls">
+          <select
+            value={selectedSymbol}
+            onChange={(e) => setSelectedSymbol(e.target.value)}
+          >
+            {symbols.map((symbol) => (
+              <option key={symbol} value={symbol}>
+                {symbol}
+              </option>
+            ))}
+          </select>
+
+          <button onClick={isRunning ? stop : start}>
+            {isRunning ? "Stop" : "Start"} Tracking
+          </button>
+        </div>
+      </div>
+
+      <div className="price-display">
+        <div className="current-price">
+          <h1>${currentPrice?.toFixed(2) || "--"}</h1>
+          <div
+            className={`price-change ${
+              priceChange >= 0 ? "positive" : "negative"
+            }`}
+          >
+            {priceChange >= 0 ? "+" : ""}
+            {priceChange.toFixed(2)}({priceChangePercent >= 0 ? "+" : ""}
+            {priceChangePercent.toFixed(2)}%)
+          </div>
+        </div>
+
+        <div className="status-indicators">
+          {isLoading && <span className="loading">🔄 Updating...</span>}
+          {error && <span className="error">❌ Error</span>}
+          {isRunning && <span className="live">🔴 LIVE</span>}
+        </div>
+      </div>
+
+      <div className="price-chart">
+        <h3>Price History (Last 50 updates)</h3>
+        <div className="chart-container">
+          {priceHistory.map((point, index) => (
+            <div
+              key={index}
+              className="price-point"
+              style={{
+                height: `${
+                  ((point.price -
+                    Math.min(...priceHistory.map((p) => p.price))) /
+                    (Math.max(...priceHistory.map((p) => p.price)) -
+                      Math.min(...priceHistory.map((p) => p.price)))) *
+                  100
+                }%`,
+                backgroundColor:
+                  index > 0 && point.price > priceHistory[index - 1].price
+                    ? "green"
+                    : "red",
+              }}
+              title={`$${point.price.toFixed(2)} at ${new Date(
+                point.time
+              ).toLocaleTimeString()}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="error-message">
+          Failed to fetch data for {selectedSymbol}: {error.message}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### API Status Dashboard
+
+```tsx
+function APIStatusDashboard() {
+  const apis = [
+    { name: "User Service", endpoint: "/api/users/health" },
+    { name: "Payment Service", endpoint: "/api/payments/health" },
+    { name: "Notification Service", endpoint: "/api/notifications/health" },
+    { name: "Analytics Service", endpoint: "/api/analytics/health" },
+  ];
+
+  return (
+    <div className="api-dashboard">
+      <h2>API Status Dashboard</h2>
+      <div className="api-grid">
+        {apis.map((api) => (
+          <APIStatusCard key={api.name} {...api} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function APIStatusCard({ name, endpoint }: { name: string; endpoint: string }) {
+  const { data, isLoading, error, retryCount } = usePolling({
+    fn: async () => {
+      const startTime = performance.now();
+      const response = await fetch(endpoint);
+      const endTime = performance.now();
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      return {
+        ...result,
+        responseTime: Math.round(endTime - startTime),
+      };
+    },
+    interval: 15000, // Check every 15 seconds
+    maxRetries: 3,
+    retryDelay: 5000,
+  });
+
+  const getStatusColor = () => {
+    if (error) return "#dc3545"; // Red
+    if (!data) return "#6c757d"; // Gray
+    if (data.responseTime < 200) return "#28a745"; // Green
+    if (data.responseTime < 500) return "#ffc107"; // Yellow
+    return "#fd7e14"; // Orange
+  };
+
+  return (
+    <div
+      className="api-status-card"
+      style={{ borderLeft: `4px solid ${getStatusColor()}` }}
+    >
+      <div className="card-header">
+        <h3>{name}</h3>
+        {isLoading && <span className="loading-spinner">⏳</span>}
+      </div>
+
+      <div className="status-info">
+        {error ? (
+          <div className="error-state">
+            <p className="status">🔴 DOWN</p>
+            <p className="error-message">{error.message}</p>
+            {retryCount > 0 && (
+              <p className="retry-count">Retries: {retryCount}</p>
+            )}
+          </div>
+        ) : data ? (
+          <div className="healthy-state">
+            <p className="status">🟢 UP</p>
+            <p className="response-time">{data.responseTime}ms</p>
+            <p className="version">v{data.version || "unknown"}</p>
+          </div>
+        ) : (
+          <div className="loading-state">
+            <p className="status">⏳ CHECKING</p>
+          </div>
+        )}
+      </div>
+
+      <div className="card-footer">
+        <small>Endpoint: {endpoint}</small>
+      </div>
+    </div>
+  );
+}
+```
+
+### Dynamic Polling Interval
+
+```tsx
+function AdaptivePollingDemo() {
+  const [pollInterval, setPollInterval] = useState(5000);
+  const [priority, setPriority] = useState<"low" | "normal" | "high">("normal");
+
+  // Adjust polling interval based on priority
+  useEffect(() => {
+    const intervals = {
+      low: 30000, // 30 seconds
+      normal: 5000, // 5 seconds
+      high: 1000, // 1 second
+    };
+    setPollInterval(intervals[priority]);
+  }, [priority]);
+
+  const { data, isLoading, error, isRunning, stop, start } = usePolling({
+    fn: async () => {
+      const response = await fetch("/api/dynamic-data");
+      return response.json();
+    },
+    interval: pollInterval,
+    onSuccess: (data) => {
+      // Auto-adjust priority based on data urgency
+      if (data.urgent) {
+        setPriority("high");
+      } else if (data.normal) {
+        setPriority("normal");
+      } else {
+        setPriority("low");
+      }
+    },
+  });
+
+  return (
+    <div className="adaptive-polling">
+      <h2>Adaptive Polling Demo</h2>
+
+      <div className="priority-controls">
+        <h3>Polling Priority</h3>
+        <div className="priority-buttons">
+          {(["low", "normal", "high"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPriority(p)}
+              className={priority === p ? "active" : ""}
+            >
+              {p.toUpperCase()} (
+              {p === "low" ? "30s" : p === "normal" ? "5s" : "1s"})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="polling-status">
+        <p>Current Interval: {pollInterval / 1000}s</p>
+        <p>Status: {isRunning ? "🟢 Running" : "⏸️ Stopped"}</p>
+        <p>Loading: {isLoading ? "Yes" : "No"}</p>
+
+        <div className="controls">
+          <button onClick={isRunning ? stop : start}>
+            {isRunning ? "Stop" : "Start"} Polling
+          </button>
+        </div>
+      </div>
+
+      {data && (
+        <div className="data-display">
+          <h3>Current Data</h3>
+          <p>Timestamp: {new Date(data.timestamp).toLocaleString()}</p>
+          <p>
+            Priority Level:{" "}
+            {data.urgent ? "HIGH" : data.normal ? "NORMAL" : "LOW"}
+          </p>
+          <p>Value: {data.value}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-display">
+          <h3>Error</h3>
+          <p>{error.message}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Notification Polling
+
+```tsx
+function NotificationCenter() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const { data, error, isRunning } = usePolling({
+    fn: async () => {
+      const response = await fetch("/api/notifications/unread");
+      return response.json();
+    },
+    interval: 10000, // Check every 10 seconds
+    onSuccess: (data) => {
+      if (data.notifications.length > 0) {
+        setNotifications((prev) => {
+          const newNotifications = data.notifications.filter(
+            (newNotif: any) =>
+              !prev.some((existing) => existing.id === newNotif.id)
+          );
+          return [...newNotifications, ...prev];
+        });
+        setUnreadCount(data.unreadCount);
+
+        // Show browser notification for new items
+        if (data.notifications.length > 0 && "Notification" in window) {
+          new Notification("New notifications", {
+            body: `You have ${data.notifications.length} new notifications`,
+            icon: "/notification-icon.png",
+          });
+        }
+      }
+    },
+  });
+
+  const markAsRead = async (notificationId: string) => {
+    await fetch(`/api/notifications/${notificationId}/read`, {
+      method: "POST",
+    });
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  };
+
+  return (
+    <div className="notification-center">
+      <div className="notification-header">
+        <h2>Notifications</h2>
+        <div className="status-indicator">
+          {unreadCount > 0 && (
+            <span className="unread-badge">{unreadCount}</span>
+          )}
+          <span
+            className={`connection-status ${
+              isRunning ? "connected" : "disconnected"
+            }`}
+          >
+            {isRunning ? "🟢" : "🔴"}
+          </span>
+        </div>
+      </div>
+
+      <div className="notifications-list">
+        {notifications.length === 0 ? (
+          <div className="empty-state">
+            <p>No notifications</p>
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`notification-item ${
+                notification.read ? "read" : "unread"
+              }`}
+            >
+              <div className="notification-content">
+                <h4>{notification.title}</h4>
+                <p>{notification.message}</p>
+                <small>
+                  {new Date(notification.timestamp).toLocaleString()}
+                </small>
+              </div>
+              {!notification.read && (
+                <button
+                  onClick={() => markAsRead(notification.id)}
+                  className="mark-read-btn"
+                >
+                  Mark as read
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {error && (
+        <div className="error-banner">
+          Failed to fetch notifications: {error.message}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Choose the Right Polling Type
+
+```tsx
+// ✅ Good: Use interval polling for regular updates
+const dashboardData = usePolling({
+  fn: fetchDashboardMetrics,
+  type: "interval",
+  interval: 30000, // Every 30 seconds
+});
+
+// ✅ Good: Use long polling for real-time data
+const chatMessages = usePolling({
+  fn: fetchNewMessages,
+  type: "long",
+  interval: 100, // Minimal delay between requests
+});
+
+// ❌ Avoid: Long polling with long intervals
+const inefficient = usePolling({
+  fn: fetchData,
+  type: "long",
+  interval: 10000, // Defeats the purpose of long polling
+});
+```
+
+### 2. Handle Errors Gracefully
+
+```tsx
+// ✅ Good: Comprehensive error handling
+const { data, error, retryCount } = usePolling({
+  fn: fetchData,
+  maxRetries: 5,
+  retryDelay: 2000,
+  onError: (error, count) => {
+    if (count >= 3) {
+      // Alert user after multiple failures
+      toast.error("Connection issues detected");
+    }
+    // Log for debugging
+    console.error(`Polling failed (attempt ${count}):`, error);
+  },
+});
+
+// ❌ Avoid: No error handling
+const risky = usePolling({
+  fn: fetchData,
+  // No error handling strategy
+});
+```
+
+### 3. Optimize Performance
+
+```tsx
+// ✅ Good: Reasonable intervals based on data importance
+const criticalData = usePolling({
+  fn: fetchCriticalMetrics,
+  interval: 5000, // 5 seconds for critical data
+});
+
+const normalData = usePolling({
+  fn: fetchNormalMetrics,
+  interval: 30000, // 30 seconds for normal data
+});
+
+// ✅ Good: Stop polling when not needed
+const { stop } = usePolling({
+  fn: fetchData,
+  interval: 1000,
+});
+
+useEffect(() => {
+  if (!isTabVisible) {
+    stop(); // Stop when tab is not visible
+  }
+}, [isTabVisible, stop]);
+```
+
+### 4. Clean State Management
+
+```tsx
+// ✅ Good: Clear separation of concerns
+function usePollingWithState<T>(
+  fn: () => Promise<T>,
+  options?: UsePollingOptions<T>
+) {
+  const [history, setHistory] = useState<T[]>([]);
+
+  const polling = usePolling({
+    ...options,
+    fn,
+    onSuccess: (data) => {
+      setHistory((prev) => [...prev.slice(-99), data]); // Keep last 100 items
+      options?.onSuccess?.(data);
+    },
+  });
+
+  return {
+    ...polling,
+    history,
+    clearHistory: () => setHistory([]),
+  };
+}
+```
+
+### 5. Conditional Polling
+
+```tsx
+// ✅ Good: Conditional polling based on user state
+function ConditionalPolling({ userId }: { userId?: string }) {
+  const shouldPoll = Boolean(userId);
+
+  const { data } = usePolling({
+    fn: () => fetchUserData(userId!),
+    autoStart: shouldPoll,
+    interval: 5000,
+  });
+
+  return <div>{data ? "User data loaded" : "No user"}</div>;
+}
+```
+
+### 6. Resource Cleanup
+
+```tsx
+// ✅ Good: Proper cleanup on unmount
+function PollingComponent() {
+  const { stop } = usePolling({
+    fn: fetchData,
+    interval: 1000,
+  });
+
+  useEffect(() => {
+    return () => {
+      stop(); // Cleanup on unmount
+    };
+  }, [stop]);
+}
+```
+
+## TypeScript
+
+The hook is fully typed with comprehensive interfaces:
+
+```tsx
+import { usePolling, UsePollingOptions, UsePollingResults } from "light-hooks";
+
+// Type inference works automatically
+const result = usePolling({
+  fn: () => fetch("/api/data").then((r) => r.json()),
+});
+// result: UsePollingResults<any>
+
+// Explicit typing for better type safety
+interface UserData {
+  id: string;
+  name: string;
+  status: "online" | "offline";
+}
+
+const options: UsePollingOptions<UserData> = {
+  fn: async (): Promise<UserData> => {
+    const response = await fetch("/api/user");
+    return response.json();
+  },
+  interval: 5000,
+  onSuccess: (data: UserData) => {
+    console.log("User status:", data.status);
+  },
+};
+
+const result: UsePollingResults<UserData> = usePolling(options);
+
+// Custom hook with specific types
+function useUserPolling(userId: string) {
+  return usePolling<UserData>({
+    fn: async () => {
+      const response = await fetch(`/api/users/${userId}`);
+      if (!response.ok) throw new Error("Failed to fetch user");
+      return response.json();
+    },
+    interval: 10000,
+  });
+}
+```
+
+### Interface Definitions
+
+```tsx
+interface UsePollingOptions<T = any> {
+  fn: () => Promise<T>;
+  type?: "long" | "interval";
+  interval?: number;
+  autoStart?: boolean;
+  maxRetries?: number;
+  retryDelay?: number;
+  onError?: (error: Error, retryCount: number) => void;
+  onSuccess?: (data: T) => void;
+}
+
+interface UsePollingResults<T = any> {
+  data: T | null;
+  isLoading: boolean;
+  isRunning: boolean;
+  error: Error | null;
+  retryCount: number;
+  start: () => void;
+  stop: () => void;
+  poll: () => Promise<void>;
+  reset: () => void;
+}
+```
+
+## Common Issues
+
+### Memory Leaks
+
+```tsx
+// ✅ Good: Hook automatically cleans up
+function Component() {
+  const { data } = usePolling({ fn: fetchData });
+  // Cleanup happens automatically on unmount
+  return <div>{data}</div>;
+}
+
+// ❌ Avoid: Manual polling without cleanup
+useEffect(() => {
+  const interval = setInterval(fetchData, 1000);
+  // Missing cleanup!
+}, []);
+```
+
+### Race Conditions
+
+```tsx
+// ✅ Good: Hook handles race conditions internally
+const { data } = usePolling({
+  fn: async () => {
+    // Hook ensures only latest response is used
+    const response = await fetch("/api/data");
+    return response.json();
+  },
+});
+
+// ❌ Problematic: Manual race condition handling
+const [data, setData] = useState(null);
+useEffect(() => {
+  let cancelled = false;
+  fetchData().then((result) => {
+    if (!cancelled) setData(result);
+  });
+  return () => {
+    cancelled = true;
+  };
+}, []);
+```
+
+### Error Recovery
+
+```tsx
+// ✅ Good: Proper error recovery strategy
+const { error, reset, retryCount } = usePolling({
+  fn: fetchData,
+  maxRetries: 3,
+  retryDelay: 2000,
+  onError: (error, count) => {
+    if (count >= 3) {
+      // Notify user and provide recovery options
+      showErrorNotification("Connection failed. Please check your network.");
+    }
+  },
+});
+
+// User can manually retry
+if (error && retryCount >= 3) {
+  return (
+    <div>
+      <p>Polling failed: {error.message}</p>
+      <button onClick={reset}>Try Again</button>
+    </div>
+  );
+}
+```
+
+### Performance Issues
+
+```tsx
+// ❌ Problem: Too frequent polling
+const heavy = usePolling({
+  fn: expensiveApiCall,
+  interval: 100, // Too frequent!
+});
+
+// ✅ Solution: Appropriate intervals and optimization
+const optimized = usePolling({
+  fn: expensiveApiCall,
+  interval: 5000, // Reasonable frequency
+  onSuccess: useCallback((data) => {
+    // Memoize expensive operations
+    processData(data);
+  }, []),
+});
+```
+
+## Advanced Usage
+
+### Adaptive Polling
+
+```tsx
+function useAdaptivePolling<T>(
+  fn: () => Promise<T>,
+  baseInterval: number = 1000
+) {
+  const [dynamicInterval, setDynamicInterval] = useState(baseInterval);
+
+  return usePolling({
+    fn,
+    interval: dynamicInterval,
+    onSuccess: (data: any) => {
+      // Adjust interval based on data freshness
+      if (data.lastUpdated && Date.now() - data.lastUpdated < 60000) {
+        setDynamicInterval(baseInterval); // Fast polling for fresh data
+      } else {
+        setDynamicInterval(baseInterval * 5); // Slow polling for stale data
+      }
+    },
+    onError: () => {
+      // Exponential backoff on errors
+      setDynamicInterval((prev) => Math.min(prev * 2, 60000));
+    },
+  });
+}
+```
+
+### Polling with Cache
+
+```tsx
+function usePollingWithCache<T>(
+  key: string,
+  fn: () => Promise<T>,
+  options?: UsePollingOptions<T>
+) {
+  const [cache, setCache] = useState<Map<string, T>>(new Map());
+
+  return usePolling({
+    ...options,
+    fn: async () => {
+      const cached = cache.get(key);
+      if (cached && Date.now() - cached.timestamp < 30000) {
+        return cached.data;
+      }
+
+      const data = await fn();
+      setCache((prev) => prev.set(key, { data, timestamp: Date.now() }));
+      return data;
+    },
+  });
+}
+```
+
+### Coordinated Polling
+
+```tsx
+function useCoordinatedPolling() {
+  const [globalPaused, setGlobalPaused] = useState(false);
+
+  const createPolling = <T,>(options: UsePollingOptions<T>) => {
+    return usePolling({
+      ...options,
+      autoStart: options.autoStart && !globalPaused,
+    });
+  };
+
+  return {
+    createPolling,
+    pauseAll: () => setGlobalPaused(true),
+    resumeAll: () => setGlobalPaused(false),
+    isPaused: globalPaused,
+  };
+}
+```
