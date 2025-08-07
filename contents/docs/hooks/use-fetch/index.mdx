@@ -1,0 +1,612 @@
+---
+title: useFetch
+description: Comprehensive React hook for data fetching with loading states, error handling, retries, caching, and request cancellation.
+---
+
+The `useFetch` hook provides a complete solution for HTTP requests with advanced features like automatic loading states, error handling, retry logic, caching, and request cancellation. It's designed to handle all common data fetching scenarios in React applications.
+
+## Basic Usage
+
+```tsx
+import { useFetch } from 'light-hooks';
+
+function UserProfile({ userId }: { userId: string }) {
+  const { data: user, loading, error } = useFetch<User>(
+    `https://api.example.com/users/${userId}`
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!user) return <div>No user found</div>;
+
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | `string` | The URL to fetch from |
+| `options` | `UseFetchOptions<T>` | Configuration options for the request |
+
+### Options
+
+```tsx
+interface UseFetchOptions<T = any> {
+  /**
+   * HTTP method to use
+   * @default 'GET'
+   */
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
+  /**
+   * Request body data
+   */
+  body?: any;
+  /**
+   * Whether to automatically execute the request on mount
+   * @default true
+   */
+  immediate?: boolean;
+  /**
+   * Function to transform response data
+   */
+  transform?: (data: any) => T;
+  /**
+   * Retry configuration
+   */
+  retry?: {
+    attempts?: number;        // Number of retry attempts
+    delay?: number;          // Delay between retries in milliseconds
+    retryOn?: number[];      // Retry on specific status codes
+  };
+  /**
+   * Custom cache configuration
+   */
+  customCache?: {
+    key?: string;           // Cache key for storing response
+    ttl?: number;          // Cache duration in milliseconds
+  };
+  /**
+   * Request timeout in milliseconds
+   * @default 10000
+   */
+  timeout?: number;
+  /**
+   * Dependencies that trigger a refetch when changed
+   */
+  deps?: any[];
+  /**
+   * Additional fetch options (headers, credentials, etc.)
+   */
+  fetchOptions?: Omit<RequestInit, 'method' | 'body'>;
+}
+```
+
+### Return Value
+
+```tsx
+interface UseFetchReturn<T> {
+  data: T | null;                                              // The response data
+  loading: boolean;                                            // Loading state
+  error: Error | null;                                         // Error object if request failed
+  response: Response | null;                                   // HTTP response object
+  execute: (overrideOptions?: Partial<UseFetchOptions<T>>) => Promise<T | null>; // Manual trigger
+  abort: () => void;                                          // Abort current request
+  reset: () => void;                                          // Reset state
+  aborted: boolean;                                           // Whether request was aborted
+}
+```
+
+## Examples
+
+### GET Request with Loading States
+
+```tsx
+function PostsList() {
+  const { data: posts, loading, error, execute } = useFetch<Post[]>(
+    'https://jsonplaceholder.typicode.com/posts'
+  );
+
+  return (
+    <div>
+      <button onClick={() => execute()} disabled={loading}>
+        {loading ? 'Refreshing...' : 'Refresh Posts'}
+      </button>
+      
+      {error && (
+        <div className="error">
+          Failed to load posts: {error.message}
+        </div>
+      )}
+      
+      {posts && (
+        <div>
+          {posts.map(post => (
+            <article key={post.id}>
+              <h3>{post.title}</h3>
+              <p>{post.body}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### POST Request with Form Data
+
+```tsx
+function CreateUser() {
+  const [formData, setFormData] = useState({ name: '', email: '' });
+  
+  const { execute: createUser, loading, error, data } = useFetch<User>(
+    'https://api.example.com/users',
+    {
+      method: 'POST',
+      immediate: false,
+      fetchOptions: {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    }
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createUser({
+      body: JSON.stringify(formData)
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={formData.name}
+        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+        placeholder="Name"
+      />
+      <input
+        value={formData.email}
+        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+        placeholder="Email"
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Creating...' : 'Create User'}
+      </button>
+      
+      {error && <p>Error: {error.message}</p>}
+      {data && <p>User created: {data.name}</p>}
+    </form>
+  );
+}
+```
+
+### Search with Dependencies
+
+```tsx
+function SearchResults() {
+  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState({ category: 'all' });
+
+  const { data: results, loading, error } = useFetch<SearchResult[]>(
+    `https://api.example.com/search?q=${query}&category=${filters.category}`,
+    {
+      deps: [query, filters], // Refetch when query or filters change
+      immediate: query.length > 2, // Only search when query is meaningful
+      transform: (data) => data.results || [] // Transform response
+    }
+  );
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search..."
+      />
+      
+      <select
+        value={filters.category}
+        onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+      >
+        <option value="all">All Categories</option>
+        <option value="products">Products</option>
+        <option value="articles">Articles</option>
+      </select>
+
+      {loading && <div>Searching...</div>}
+      {error && <div>Search failed: {error.message}</div>}
+      
+      {results && (
+        <div>
+          <p>Found {results.length} results</p>
+          {results.map(result => (
+            <div key={result.id}>
+              <h3>{result.title}</h3>
+              <p>{result.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Request Cancellation
+
+```tsx
+function CancellableRequest() {
+  const { data, loading, error, execute, abort, aborted } = useFetch<any>(
+    'https://api.example.com/slow-endpoint',
+    { immediate: false }
+  );
+
+  useEffect(() => {
+    // Cleanup: abort request on unmount
+    return () => abort();
+  }, [abort]);
+
+  return (
+    <div>
+      <button onClick={() => execute()} disabled={loading}>
+        Start Request
+      </button>
+      
+      <button onClick={abort} disabled={!loading}>
+        Cancel Request
+      </button>
+
+      {loading && <div>Loading... (request in progress)</div>}
+      {aborted && <div>Request was cancelled</div>}
+      {error && <div>Error: {error.message}</div>}
+      {data && <div>Success: {JSON.stringify(data)}</div>}
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Retry Logic with Exponential Backoff
+
+```tsx
+function RobustDataFetcher() {
+  const { data, loading, error, execute } = useFetch<ApiResponse>(
+    'https://api.example.com/unreliable-endpoint',
+    {
+      retry: {
+        attempts: 3,
+        delay: 1000, // Start with 1 second
+        retryOn: [500, 502, 503, 504] // Retry on server errors
+      },
+      timeout: 5000 // 5 second timeout
+    }
+  );
+
+  return (
+    <div>
+      <h3>Robust Data Fetching</h3>
+      
+      {loading && (
+        <div>
+          <div>Loading with automatic retries...</div>
+          <div>Will retry up to 3 times on server errors</div>
+        </div>
+      )}
+      
+      {error && (
+        <div>
+          <p>Failed after retries: {error.message}</p>
+          <button onClick={() => execute()}>Try Again</button>
+        </div>
+      )}
+      
+      {data && (
+        <div>
+          <h4>Success!</h4>
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Caching Implementation
+
+```tsx
+function CachedUserProfile({ userId }: { userId: string }) {
+  const { data: user, loading, error } = useFetch<User>(
+    `https://api.example.com/users/${userId}`,
+    {
+      customCache: {
+        key: `user-${userId}`,
+        ttl: 300000 // Cache for 5 minutes
+      },
+      fetchOptions: {
+        headers: {
+          'Cache-Control': 'max-age=300' // Browser cache for 5 minutes
+        }
+      }
+    }
+  );
+
+  return (
+    <div>
+      {loading && <div>Loading user profile...</div>}
+      {error && <div>Failed to load profile: {error.message}</div>}
+      
+      {user && (
+        <div>
+          <img src={user.avatar} alt={user.name} />
+          <h2>{user.name}</h2>
+          <p>{user.bio}</p>
+          <small>Data cached for 5 minutes</small>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### File Upload with Progress
+
+```tsx
+function FileUploader() {
+  const [file, setFile] = useState<File | null>(null);
+  
+  const { execute: uploadFile, loading, error, data } = useFetch<UploadResponse>(
+    'https://api.example.com/upload',
+    {
+      method: 'POST',
+      immediate: false,
+      timeout: 60000 // 1 minute timeout for uploads
+    }
+  );
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    await uploadFile({
+      body: formData,
+      fetchOptions: {
+        // Don't set Content-Type, let browser set it with boundary
+      }
+    });
+  };
+
+  return (
+    <div>
+      <input
+        type="file"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
+      
+      <button onClick={handleUpload} disabled={!file || loading}>
+        {loading ? 'Uploading...' : 'Upload File'}
+      </button>
+
+      {error && <div>Upload failed: {error.message}</div>}
+      {data && <div>Upload successful! File ID: {data.fileId}</div>}
+    </div>
+  );
+}
+```
+
+### Authentication with Token Refresh
+
+```tsx
+function AuthenticatedRequest() {
+  const [token, setToken] = useState(localStorage.getItem('authToken'));
+
+  const { data, loading, error, execute } = useFetch<UserData>(
+    'https://api.example.com/protected-data',
+    {
+      fetchOptions: {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      },
+      transform: (data) => {
+        // Transform and validate response
+        if (!data.user) throw new Error('Invalid response format');
+        return data.user;
+      }
+    }
+  );
+
+  // Handle token refresh on 401
+  useEffect(() => {
+    if (error && error.message.includes('401')) {
+      // Refresh token logic
+      refreshAuthToken().then(newToken => {
+        setToken(newToken);
+        localStorage.setItem('authToken', newToken);
+        execute(); // Retry with new token
+      });
+    }
+  }, [error, execute]);
+
+  return (
+    <div>
+      {loading && <div>Loading protected data...</div>}
+      {error && <div>Access error: {error.message}</div>}
+      
+      {data && (
+        <div>
+          <h3>Protected User Data</h3>
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Real-time Data with Polling
+
+```tsx
+function RealTimeData() {
+  const [polling, setPolling] = useState(false);
+  
+  const { data: metrics, loading, error, execute } = useFetch<SystemMetrics>(
+    'https://api.example.com/system/metrics',
+    { immediate: true }
+  );
+
+  // Polling effect
+  useEffect(() => {
+    if (!polling) return;
+
+    const interval = setInterval(() => {
+      execute();
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [polling, execute]);
+
+  return (
+    <div>
+      <div>
+        <button onClick={() => setPolling(!polling)}>
+          {polling ? 'Stop Polling' : 'Start Polling'}
+        </button>
+        <button onClick={() => execute()} disabled={loading}>
+          Refresh Now
+        </button>
+      </div>
+
+      {loading && <div>Updating metrics...</div>}
+      {error && <div>Failed to load metrics: {error.message}</div>}
+      
+      {metrics && (
+        <div>
+          <h3>System Metrics {polling && '(Live)'}</h3>
+          <div>CPU Usage: {metrics.cpu}%</div>
+          <div>Memory Usage: {metrics.memory}%</div>
+          <div>Disk Usage: {metrics.disk}%</div>
+          <small>Last updated: {new Date().toLocaleTimeString()}</small>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+The hook provides comprehensive error handling:
+
+```tsx
+function ErrorHandlingExample() {
+  const { data, error, loading, execute } = useFetch<any>(
+    'https://api.example.com/endpoint'
+  );
+
+  // Different types of errors
+  if (error) {
+    if (error.name === 'AbortError') {
+      return <div>Request was cancelled</div>;
+    }
+    
+    if (error.message.includes('timeout')) {
+      return (
+        <div>
+          Request timed out
+          <button onClick={() => execute()}>Retry</button>
+        </div>
+      );
+    }
+    
+    if (error.message.includes('404')) {
+      return <div>Resource not found</div>;
+    }
+    
+    return <div>Network error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {loading && <div>Loading...</div>}
+      {data && <div>Data loaded successfully</div>}
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+The hook provides excellent TypeScript support with automatic type inference:
+
+```tsx
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+interface ApiResponse<T> {
+  data: T;
+  message: string;
+  success: boolean;
+}
+
+// Automatic type inference
+const { data, loading, error } = useFetch<ApiResponse<User>>(
+  'https://api.example.com/user/123'
+);
+
+// data is typed as ApiResponse<User> | null
+// error is typed as Error | null
+// loading is typed as boolean
+```
+
+## Performance Tips
+
+1. **Use dependencies wisely**: Only include values that should trigger refetch
+2. **Implement caching**: Use customCache for frequently accessed data
+3. **Cancel requests**: Always abort on component unmount
+4. **Debounce searches**: Combine with useDebounce for search inputs
+5. **Handle loading states**: Provide immediate feedback to users
+
+## Common Use Cases
+
+- 🔍 **API Integration**: REST API calls with full error handling
+- 📊 **Dashboard Data**: Real-time metrics and analytics
+- 👤 **User Management**: CRUD operations for user data
+- 🛒 **E-commerce**: Product listings, cart operations
+- 📝 **Forms**: Submission with validation and feedback
+- 🔐 **Authentication**: Login, logout, token refresh
+- 📁 **File Operations**: Upload, download, file management
+- 🔄 **Real-time Updates**: Polling and live data synchronization
+
+## Browser Compatibility
+
+- ✅ **Modern Browsers**: Chrome, Firefox, Safari, Edge
+- ✅ **Mobile Browsers**: iOS Safari, Chrome Mobile
+- ✅ **Fetch API**: Native fetch with polyfill support
+- ✅ **AbortController**: Request cancellation support
+
+## Best Practices
+
+1. **Always handle loading states**: Provide user feedback during requests
+2. **Implement proper error handling**: Handle different error types appropriately
+3. **Use TypeScript**: Leverage type safety for better development experience
+4. **Cache strategically**: Cache stable data to improve performance
+5. **Cancel on unmount**: Prevent memory leaks and unnecessary updates
+6. **Validate responses**: Use transform function to validate and sanitize data
+7. **Set reasonable timeouts**: Balance user experience with network reliability

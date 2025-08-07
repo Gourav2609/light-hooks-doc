@@ -1,0 +1,284 @@
+---
+title: useThrottle
+description: Rate-limit function execution at regular intervals. Perfect for scroll and resize handlers with customizable leading and trailing edge control.
+---
+
+The `useThrottle` hook rate-limits function execution at regular intervals, ensuring functions execute at most once per delay period. Unlike debouncing, throttling executes during continuous calls, making it perfect for scroll handlers and resize events.
+
+## Basic Usage
+
+```tsx
+import { useThrottle } from 'light-hooks';
+
+function ScrollComponent() {
+  const [scrollY, setScrollY] = useState(0);
+  const throttledScrollY = useThrottle(scrollY, { delay: 100 });
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div>
+      <div>Current scroll: {scrollY}px</div>
+      <div>Throttled scroll: {throttledScrollY}px</div>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### useThrottle (Value)
+
+Throttles a value, limiting updates to occur at most once per delay period.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `T` | The value to throttle |
+| `options` | `UseThrottleOptions` | Configuration options for throttling behavior |
+
+#### Return Value
+
+| Type | Description |
+|------|-------------|
+| `T` | The throttled value |
+
+### useThrottleCallback (Function)
+
+Creates a throttled callback function with additional control methods.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `callback` | `Function` | The function to throttle |
+| `options` | `UseThrottleOptions` | Configuration options for throttling behavior |
+
+#### Return Value
+
+```tsx
+interface UseThrottleCallbackReturn<T extends (...args: any[]) => any> {
+  throttledCallback: T;     // The throttled function
+  isThrottled: boolean;     // Whether currently being throttled
+  cancel: () => void;       // Cancel pending executions
+  flush: () => void;        // Execute immediately
+}
+```
+
+### Options
+
+```tsx
+interface UseThrottleOptions {
+  /**
+   * The delay in milliseconds between function executions
+   * @default 300
+   */
+  delay?: number;
+  /**
+   * Whether to execute immediately on the first call (leading edge)
+   * @default true
+   */
+  leading?: boolean;
+  /**
+   * Whether to execute after the delay on the last call (trailing edge)
+   * @default true
+   */
+  trailing?: boolean;
+}
+```
+
+## Examples
+
+### Throttled Search API
+
+```tsx
+function SearchComponent() {
+  const [query, setQuery] = useState('');
+  const throttledQuery = useThrottle(query, { delay: 500 });
+
+  useEffect(() => {
+    if (throttledQuery) {
+      // API call will be made at most once every 500ms
+      searchAPI(throttledQuery);
+    }
+  }, [throttledQuery]);
+
+  return (
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+### Button Click Protection
+
+```tsx
+function SaveButton() {
+  const { throttledCallback: handleSave, isThrottled } = useThrottleCallback(
+    () => {
+      console.log('Saving data...');
+      saveData();
+    },
+    { delay: 1000, trailing: false }
+  );
+
+  return (
+    <button 
+      onClick={handleSave}
+      disabled={isThrottled}
+    >
+      {isThrottled ? 'Saving...' : 'Save'}
+    </button>
+  );
+}
+```
+
+## Advanced Examples
+
+### Resize Handler with Controls
+
+```tsx
+import { useThrottleCallback } from 'light-hooks';
+
+function ResizeComponent() {
+  const { throttledCallback: handleResize, isThrottled, cancel, flush } = useThrottleCallback(
+    () => {
+      console.log('Window resized to:', window.innerWidth, window.innerHeight);
+      // Expensive layout calculations here
+    },
+    { delay: 250 }
+  );
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancel(); // Cancel any pending executions
+    };
+  }, [handleResize, cancel]);
+
+  return (
+    <div>
+      <div>Resize the window {isThrottled ? '(throttled)' : ''}</div>
+      <button onClick={flush}>Execute Now</button>
+      <button onClick={cancel}>Cancel Pending</button>
+    </div>
+  );
+}
+```
+
+### Performance Monitoring
+
+```tsx
+function PerformanceMonitor() {
+  const [fps, setFps] = useState(0);
+  const throttledFps = useThrottle(fps, { delay: 1000 });
+
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+
+    const animate = () => {
+      frameCount++;
+      const currentTime = performance.now();
+      
+      if (currentTime - lastTime >= 1000) {
+        setFps(Math.round((frameCount * 1000) / (currentTime - lastTime)));
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+      
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+  }, []);
+
+  return (
+    <div>
+      <div>Current FPS: {fps}</div>
+      <div>Throttled FPS (1s): {throttledFps}</div>
+    </div>
+  );
+}
+```
+
+### Leading vs Trailing Edge
+
+```tsx
+function EdgeExamples() {
+  // Leading edge only - executes immediately, then waits
+  const { throttledCallback: leadingOnly } = useThrottleCallback(
+    () => console.log('Leading edge'),
+    { delay: 1000, leading: true, trailing: false }
+  );
+
+  // Trailing edge only - waits, then executes
+  const { throttledCallback: trailingOnly } = useThrottleCallback(
+    () => console.log('Trailing edge'),
+    { delay: 1000, leading: false, trailing: true }
+  );
+
+  // Both edges - executes immediately and after delay
+  const { throttledCallback: bothEdges } = useThrottleCallback(
+    () => console.log('Both edges'),
+    { delay: 1000, leading: true, trailing: true }
+  );
+
+  return (
+    <div>
+      <button onClick={leadingOnly}>Leading Only</button>
+      <button onClick={trailingOnly}>Trailing Only</button>
+      <button onClick={bothEdges}>Both Edges</button>
+    </div>
+  );
+}
+```
+
+## Throttle vs Debounce
+
+| Feature | Throttle | Debounce |
+|---------|----------|----------|
+| **Execution** | At regular intervals | After inactivity period |
+| **Use Case** | Scroll, resize events | Search inputs, validation |
+| **Frequency** | Limited rate | Delayed execution |
+| **Best For** | Performance optimization | User input handling |
+
+## TypeScript Support
+
+The hooks are fully typed and support generic types:
+
+```tsx
+const throttledString = useThrottle<string>('value', { delay: 300 });
+const throttledNumber = useThrottle<number>(42, { delay: 500 });
+
+const { throttledCallback } = useThrottleCallback<(id: string) => void>(
+  (id) => saveItem(id),
+  { delay: 1000 }
+);
+```
+
+## Common Use Cases
+
+- 📜 **Scroll Handlers**: Limit expensive scroll calculations
+- 📐 **Resize Events**: Prevent layout thrashing during window resize
+- 🚦 **API Rate Limiting**: Ensure API calls don't exceed rate limits
+- 🖱️ **Button Clicks**: Prevent accidental double-clicks
+- 🎮 **Game Controls**: Limit input frequency in games
+- 📊 **Performance Monitoring**: Regular performance sampling
+
+## Performance Tips
+
+1. **Choose appropriate delays**: Scroll (16-100ms), Resize (100-250ms), API calls (500-1000ms), Button clicks (300-1000ms)
+2. **Use leading edge** for immediate feedback
+3. **Use trailing edge** for final state updates
+4. **Cancel on unmount** to prevent memory leaks
+5. **Combine with useMemo** for expensive operations

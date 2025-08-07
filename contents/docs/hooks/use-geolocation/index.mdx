@@ -1,0 +1,414 @@
+---
+title: useGeolocation
+description: User location access with permissions, error handling, and position watching. Provides comprehensive geolocation management for React applications.
+---
+
+The `useGeolocation` hook provides access to the browser's Geolocation API with comprehensive error handling, permission management, and support for both one-time position requests and continuous position watching.
+
+## Basic Usage
+
+```tsx
+import { useGeolocation } from 'light-hooks';
+
+function LocationComponent() {
+  const { position, error, loading, getCurrentPosition } = useGeolocation({
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 60000
+  });
+
+  if (loading) return <div>Getting location...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!position) return <div>No location available</div>;
+
+  return (
+    <div>
+      <h3>Your Location</h3>
+      <p>Latitude: {position.latitude}</p>
+      <p>Longitude: {position.longitude}</p>
+      <p>Accuracy: {position.accuracy} meters</p>
+      <button onClick={getCurrentPosition}>Refresh Location</button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options` | `UseGeolocationOptions` | Configuration options for geolocation behavior |
+
+### Options
+
+```tsx
+interface UseGeolocationOptions extends PositionOptions {
+  /**
+   * Whether to watch for position changes continuously
+   * @default false
+   */
+  watch?: boolean;
+  /**
+   * Whether to request location immediately when the hook mounts
+   * @default true
+   */
+  immediate?: boolean;
+  /**
+   * Whether to enable high accuracy positioning
+   * @default false
+   */
+  enableHighAccuracy?: boolean;
+  /**
+   * Maximum time in milliseconds to wait for a position
+   * @default Infinity
+   */
+  timeout?: number;
+  /**
+   * Maximum age of cached position in milliseconds
+   * @default 0
+   */
+  maximumAge?: number;
+}
+```
+
+### Return Value
+
+```tsx
+interface UseGeolocationReturn {
+  position: GeolocationCoordinates | null;    // Current position data
+  error: GeolocationPositionError | null;     // Current error
+  loading: boolean;                           // Request in progress
+  supported: boolean;                         // Browser support
+  getCurrentPosition: () => void;             // Manual position request
+  startWatching: () => void;                 // Start continuous tracking
+  stopWatching: () => void;                  // Stop continuous tracking
+}
+
+interface GeolocationCoordinates {
+  latitude: number;              // Current latitude
+  longitude: number;             // Current longitude
+  accuracy: number;              // Accuracy in meters
+  altitude: number | null;       // Altitude in meters
+  altitudeAccuracy: number | null; // Altitude accuracy
+  heading: number | null;        // Direction of travel
+  speed: number | null;          // Speed in m/s
+  timestamp: number;             // When position was acquired
+}
+```
+
+## Examples
+
+### Location with Map Integration
+
+```tsx
+function MapComponent() {
+  const { position, error, loading } = useGeolocation({
+    enableHighAccuracy: true,
+    timeout: 5000
+  });
+
+  useEffect(() => {
+    if (position) {
+      // Initialize map with user's location
+      initializeMap({
+        center: [position.latitude, position.longitude],
+        zoom: 15
+      });
+    }
+  }, [position]);
+
+  if (loading) return <div>Finding your location...</div>;
+  if (error) {
+    return (
+      <div>
+        <p>Could not get your location: {error.message}</p>
+        <p>Please enable location permissions and try again.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div id="map" style={{ height: '400px', width: '100%' }} />
+      {position && (
+        <div>
+          <p>Centered at: {position.latitude.toFixed(6)}, {position.longitude.toFixed(6)}</p>
+          <p>Accuracy: ±{position.accuracy}m</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Manual Location Request
+
+```tsx
+function ManualLocationComponent() {
+  const { 
+    position, 
+    error, 
+    loading, 
+    supported,
+    getCurrentPosition 
+  } = useGeolocation({
+    immediate: false // Don't request automatically
+  });
+
+  if (!supported) {
+    return <div>Geolocation is not supported by this browser.</div>;
+  }
+
+  return (
+    <div>
+      <button onClick={getCurrentPosition} disabled={loading}>
+        {loading ? 'Getting Location...' : 'Get My Location'}
+      </button>
+
+      {error && (
+        <div style={{ color: 'red', marginTop: '10px' }}>
+          <strong>Error:</strong> {error.message}
+          {error.code === 1 && <p>Please allow location access in your browser.</p>}
+          {error.code === 2 && <p>Location information is unavailable.</p>}
+          {error.code === 3 && <p>Location request timed out.</p>}
+        </div>
+      )}
+
+      {position && (
+        <div style={{ marginTop: '10px' }}>
+          <h3>Location Found!</h3>
+          <p><strong>Coordinates:</strong> {position.latitude}, {position.longitude}</p>
+          <p><strong>Accuracy:</strong> ±{position.accuracy} meters</p>
+          <p><strong>Timestamp:</strong> {new Date(position.timestamp).toLocaleString()}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Continuous Position Tracking
+
+```tsx
+function TrackingComponent() {
+  const { 
+    position, 
+    error, 
+    loading,
+    startWatching, 
+    stopWatching 
+  } = useGeolocation({
+    watch: true,
+    enableHighAccuracy: true,
+    timeout: 10000
+  });
+
+  const [isTracking, setIsTracking] = useState(false);
+  const [positions, setPositions] = useState<GeolocationCoordinates[]>([]);
+
+  // Add new positions to history
+  useEffect(() => {
+    if (position && isTracking) {
+      setPositions(prev => [...prev, position]);
+    }
+  }, [position, isTracking]);
+
+  const handleStartTracking = () => {
+    setIsTracking(true);
+    setPositions([]);
+    startWatching();
+  };
+
+  const handleStopTracking = () => {
+    setIsTracking(false);
+    stopWatching();
+  };
+
+  return (
+    <div>
+      <div>
+        <button 
+          onClick={isTracking ? handleStopTracking : handleStartTracking}
+          disabled={loading}
+        >
+          {isTracking ? 'Stop Tracking' : 'Start Tracking'}
+        </button>
+      </div>
+
+      {error && <div>Error: {error.message}</div>}
+      
+      {position && (
+        <div>
+          <h3>Current Position</h3>
+          <p>Lat: {position.latitude.toFixed(6)}</p>
+          <p>Lng: {position.longitude.toFixed(6)}</p>
+          <p>Accuracy: {position.accuracy}m</p>
+          {position.speed && <p>Speed: {(position.speed * 3.6).toFixed(1)} km/h</p>}
+        </div>
+      )}
+
+      {positions.length > 0 && (
+        <div>
+          <h3>Position History ({positions.length} points)</h3>
+          <ul>
+            {positions.slice(-5).map((pos, index) => (
+              <li key={pos.timestamp}>
+                {new Date(pos.timestamp).toLocaleTimeString()}: 
+                {pos.latitude.toFixed(6)}, {pos.longitude.toFixed(6)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Location-Based Service
+
+```tsx
+function NearbyPlacesComponent() {
+  const { position, error, loading } = useGeolocation({
+    enableHighAccuracy: true,
+    maximumAge: 300000 // 5 minutes
+  });
+
+  const [places, setPlaces] = useState([]);
+  const [searchRadius, setSearchRadius] = useState(1000); // meters
+
+  useEffect(() => {
+    if (position) {
+      fetchNearbyPlaces(position.latitude, position.longitude, searchRadius)
+        .then(setPlaces)
+        .catch(console.error);
+    }
+  }, [position, searchRadius]);
+
+  if (loading) return <div>Getting your location...</div>;
+  if (error) {
+    return (
+      <div>
+        <h3>Location Required</h3>
+        <p>Please enable location access to find nearby places.</p>
+        <p>Error: {error.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3>Nearby Places</h3>
+      
+      <div>
+        <label>
+          Search radius: 
+          <select 
+            value={searchRadius} 
+            onChange={(e) => setSearchRadius(Number(e.target.value))}
+          >
+            <option value={500}>500m</option>
+            <option value={1000}>1km</option>
+            <option value={2000}>2km</option>
+            <option value={5000}>5km</option>
+          </select>
+        </label>
+      </div>
+
+      {position && (
+        <p>
+          Searching near: {position.latitude.toFixed(4)}, {position.longitude.toFixed(4)}
+          (±{position.accuracy}m accuracy)
+        </p>
+      )}
+
+      <div>
+        {places.map((place, index) => (
+          <div key={index}>
+            <h4>{place.name}</h4>
+            <p>{place.address}</p>
+            <p>{place.distance}m away</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Error Handling
+
+```tsx
+function ErrorHandlingExample() {
+  const { error } = useGeolocation();
+
+  const getErrorMessage = (error: GeolocationPositionError) => {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return "User denied the request for Geolocation.";
+      case error.POSITION_UNAVAILABLE:
+        return "Location information is unavailable.";
+      case error.TIMEOUT:
+        return "The request to get user location timed out.";
+      default:
+        return "An unknown error occurred.";
+    }
+  };
+
+  return (
+    <div>
+      {error && (
+        <div>
+          <h3>Location Error</h3>
+          <p>{getErrorMessage(error)}</p>
+          <p>Code: {error.code}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+The hook is fully typed with comprehensive TypeScript interfaces:
+
+```tsx
+const {
+  position,
+  error,
+  loading,
+  getCurrentPosition
+}: UseGeolocationReturn = useGeolocation({
+  enableHighAccuracy: true,
+  timeout: 10000
+});
+```
+
+## Common Use Cases
+
+- 🗺️ **Maps and Navigation**: Show user's current location
+- 📍 **Location-based Services**: Find nearby restaurants, stores, etc.
+- 🚚 **Delivery Apps**: Track delivery routes and locations
+- 🏃 **Fitness Apps**: Track running/walking routes
+- 🌤️ **Weather Apps**: Get weather for current location
+- 📱 **Social Media**: Location tagging for posts
+
+## Browser Support & Security
+
+- ✅ **Modern Browsers**: Chrome, Firefox, Safari, Edge
+- ✅ **Mobile Browsers**: iOS Safari, Chrome Mobile, Samsung Internet
+- ❌ **HTTP Sites**: Requires HTTPS for security (except localhost)
+- ⚠️ **Permissions**: Requires user permission grant
+
+## Performance Tips
+
+1. **Use appropriate accuracy**: High accuracy uses more battery
+2. **Set reasonable timeouts**: Prevent indefinite waiting
+3. **Cache positions**: Use `maximumAge` for better performance
+4. **Stop watching**: Clean up continuous tracking when not needed
+5. **Handle errors gracefully**: Provide fallbacks for denied permissions

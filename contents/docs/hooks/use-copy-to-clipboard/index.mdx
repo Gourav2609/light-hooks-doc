@@ -1,0 +1,679 @@
+---
+title: useCopyToClipboard
+description: React hook for copying text to clipboard with feedback, error handling, and modern Clipboard API support with legacy fallbacks.
+---
+
+The `useCopyToClipboard` hook provides a simple interface for copying text to the clipboard using the modern Clipboard API with fallback to legacy methods. It includes loading states, success feedback, and comprehensive error handling for a seamless user experience.
+
+## Basic Usage
+
+```tsx
+import { useCopyToClipboard } from 'light-hooks';
+
+function ShareComponent() {
+  const { copy, copied, error, loading } = useCopyToClipboard();
+
+  const shareUrl = 'https://example.com/article/123';
+
+  const handleCopy = () => {
+    copy(shareUrl);
+  };
+
+  return (
+    <div>
+      <input value={shareUrl} readOnly />
+      <button onClick={handleCopy} disabled={loading}>
+        {loading ? 'Copying...' : copied ? 'Copied!' : 'Copy'}
+      </button>
+      {error && <p style={{ color: 'red' }}>Failed to copy: {error}</p>}
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options` | `UseCopyToClipboardOptions` | Configuration options for copy behavior (optional) |
+
+### Options
+
+```tsx
+interface UseCopyToClipboardOptions {
+  /**
+   * Duration in milliseconds to show success state
+   * @default 2000
+   */
+  successDuration?: number;
+  /**
+   * Whether to reset the state after the success duration
+   * @default true
+   */
+  resetAfterDelay?: boolean;
+  /**
+   * Custom success message
+   * @default 'Copied to clipboard!'
+   */
+  successMessage?: string;
+}
+```
+
+### Return Value
+
+```tsx
+interface UseCopyToClipboardReturn {
+  copiedValue: string | null;        // The last copied value
+  copied: boolean;                   // Whether the copy operation was successful
+  error: string | null;              // Error message if copy failed
+  loading: boolean;                  // Whether a copy operation is in progress
+  copy: (text: string) => Promise<boolean>;  // Function to copy text to clipboard
+  reset: () => void;                 // Function to reset the state
+}
+```
+
+## Examples
+
+### Code Block with Copy Functionality
+
+```tsx
+function CodeBlock({ code, language }: { code: string; language: string }) {
+  const { copy, copied, error } = useCopyToClipboard({
+    successDuration: 1000,
+    successMessage: 'Code copied!'
+  });
+
+  return (
+    <div className="code-block">
+      <div className="code-header">
+        <span className="language">{language}</span>
+        <button 
+          className="copy-button"
+          onClick={() => copy(code)}
+        >
+          {copied ? '✓ Copied' : '📋 Copy'}
+        </button>
+      </div>
+      <pre>
+        <code>{code}</code>
+      </pre>
+      {error && (
+        <div className="error">
+          Failed to copy code: {error}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Share Button with Multiple Options
+
+```tsx
+function ShareButtons({ title, url }: { title: string; url: string }) {
+  const { copy, copied, copiedValue, loading } = useCopyToClipboard({
+    successDuration: 3000
+  });
+
+  const shareTexts = {
+    url: url,
+    title: title,
+    full: `${title} - ${url}`,
+    markdown: `[${title}](${url})`,
+    html: `<a href="${url}">${title}</a>`
+  };
+
+  return (
+    <div className="share-buttons">
+      <h3>Share this article</h3>
+      
+      {Object.entries(shareTexts).map(([type, text]) => (
+        <button
+          key={type}
+          onClick={() => copy(text)}
+          disabled={loading}
+          className={copiedValue === text ? 'copied' : ''}
+        >
+          {copiedValue === text ? 'Copied!' : `Copy ${type.toUpperCase()}`}
+        </button>
+      ))}
+      
+      {copied && (
+        <div className="success-message">
+          Successfully copied to clipboard!
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Contact Information Cards
+
+```tsx
+function ContactCard({ contact }: { contact: Contact }) {
+  const { copy, copied, copiedValue } = useCopyToClipboard();
+
+  const copyableFields = [
+    { label: 'Email', value: contact.email, icon: '📧' },
+    { label: 'Phone', value: contact.phone, icon: '📱' },
+    { label: 'Address', value: contact.address, icon: '🏠' },
+    { label: 'Website', value: contact.website, icon: '🌐' }
+  ];
+
+  return (
+    <div className="contact-card">
+      <h3>{contact.name}</h3>
+      
+      {copyableFields.map(({ label, value, icon }) => (
+        <div key={label} className="contact-field">
+          <span className="icon">{icon}</span>
+          <span className="label">{label}:</span>
+          <span className="value">{value}</span>
+          <button
+            onClick={() => copy(value)}
+            className={`copy-btn ${copiedValue === value ? 'copied' : ''}`}
+          >
+            {copiedValue === value ? '✓' : '📋'}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Form Data Copy Functionality
+
+```tsx
+function FormDataExporter() {
+  const [formData, setFormData] = useState({
+    name: 'John Doe',
+    email: 'john@example.com',
+    preferences: { theme: 'dark', notifications: true }
+  });
+
+  const { copy, copied, error, reset } = useCopyToClipboard({
+    successDuration: 2000,
+    resetAfterDelay: true
+  });
+
+  const exportFormats = {
+    json: () => JSON.stringify(formData, null, 2),
+    csv: () => Object.entries(formData).map(([key, value]) => 
+      `${key},${typeof value === 'object' ? JSON.stringify(value) : value}`
+    ).join('\n'),
+    query: () => new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(formData).map(([key, value]) => 
+          [key, typeof value === 'object' ? JSON.stringify(value) : String(value)]
+        )
+      )
+    ).toString()
+  };
+
+  return (
+    <div className="form-exporter">
+      <h3>Export Form Data</h3>
+      
+      <div className="form-data">
+        <pre>{JSON.stringify(formData, null, 2)}</pre>
+      </div>
+      
+      <div className="export-buttons">
+        {Object.entries(exportFormats).map(([format, generator]) => (
+          <button
+            key={format}
+            onClick={() => copy(generator())}
+            className="export-btn"
+          >
+            Copy as {format.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      
+      {copied && (
+        <div className="success">
+          ✅ Form data copied to clipboard!
+          <button onClick={reset}>Clear</button>
+        </div>
+      )}
+      
+      {error && (
+        <div className="error">
+          ❌ Failed to copy: {error}
+          <button onClick={reset}>Dismiss</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Bulk Copy Operations
+
+```tsx
+function BulkCopyManager({ items }: { items: string[] }) {
+  const { copy, copied, copiedValue, loading } = useCopyToClipboard();
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  const copySelected = () => {
+    const selectedText = selectedItems.join('\n');
+    copy(selectedText);
+  };
+
+  const copyAll = () => {
+    copy(items.join('\n'));
+  };
+
+  const toggleSelection = (item: string) => {
+    setSelectedItems(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item)
+        : [...prev, item]
+    );
+  };
+
+  return (
+    <div className="bulk-copy-manager">
+      <div className="controls">
+        <button onClick={copyAll} disabled={loading}>
+          Copy All ({items.length} items)
+        </button>
+        <button 
+          onClick={copySelected} 
+          disabled={loading || selectedItems.length === 0}
+        >
+          Copy Selected ({selectedItems.length} items)
+        </button>
+      </div>
+
+      <div className="items-list">
+        {items.map((item, index) => (
+          <div key={index} className="item">
+            <input
+              type="checkbox"
+              checked={selectedItems.includes(item)}
+              onChange={() => toggleSelection(item)}
+            />
+            <span className="item-text">{item}</span>
+            <button
+              onClick={() => copy(item)}
+              className={copiedValue === item ? 'copied' : ''}
+            >
+              {copiedValue === item ? '✓' : '📋'}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {copied && (
+        <div className="status">
+          Successfully copied to clipboard!
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### QR Code Generator with Copy
+
+```tsx
+function QRCodeGenerator() {
+  const [text, setText] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const { copy, copied, error } = useCopyToClipboard();
+
+  const generateQR = async () => {
+    // Simulate QR code generation
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`;
+    setQrCode(qrUrl);
+  };
+
+  const copyQRLink = () => {
+    copy(qrCode);
+  };
+
+  const copyOriginalText = () => {
+    copy(text);
+  };
+
+  return (
+    <div className="qr-generator">
+      <h3>QR Code Generator</h3>
+      
+      <div className="input-section">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter text to generate QR code..."
+        />
+        <button onClick={generateQR} disabled={!text}>
+          Generate QR Code
+        </button>
+      </div>
+
+      {qrCode && (
+        <div className="qr-result">
+          <img src={qrCode} alt="QR Code" />
+          
+          <div className="copy-options">
+            <button onClick={copyOriginalText}>
+              {copied ? '✓ Text Copied' : 'Copy Original Text'}
+            </button>
+            <button onClick={copyQRLink}>
+              {copied ? '✓ QR Link Copied' : 'Copy QR Code URL'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="error">
+          Failed to copy: {error}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### API Response Formatter
+
+```tsx
+function APIResponseFormatter({ apiResponse }: { apiResponse: any }) {
+  const { copy, copied, copiedValue, loading } = useCopyToClipboard({
+    successDuration: 1500
+  });
+
+  const formatters = {
+    pretty: () => JSON.stringify(apiResponse, null, 2),
+    minified: () => JSON.stringify(apiResponse),
+    curl: () => `curl -X GET "${apiResponse.url}" -H "Accept: application/json"`,
+    javascript: () => `fetch('${apiResponse.url}').then(res => res.json()).then(data => console.log(data));`,
+    python: () => `import requests\nresponse = requests.get('${apiResponse.url}')\ndata = response.json()`,
+    typescript: () => `interface ApiResponse {\n${Object.keys(apiResponse.data || {}).map(key => `  ${key}: any;`).join('\n')}\n}`
+  };
+
+  return (
+    <div className="api-formatter">
+      <h3>API Response Formatter</h3>
+      
+      <div className="format-buttons">
+        {Object.entries(formatters).map(([format, formatter]) => (
+          <button
+            key={format}
+            onClick={() => copy(formatter())}
+            disabled={loading}
+            className={copiedValue === formatter() ? 'active' : ''}
+          >
+            {format.charAt(0).toUpperCase() + format.slice(1)}
+            {copiedValue === formatter() && ' ✓'}
+          </button>
+        ))}
+      </div>
+
+      <div className="preview">
+        <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
+      </div>
+
+      {copied && (
+        <div className="success-toast">
+          📋 Copied to clipboard!
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Social Media Content Generator
+
+```tsx
+function SocialMediaGenerator({ article }: { article: Article }) {
+  const { copy, copied, copiedValue } = useCopyToClipboard({
+    successDuration: 2500
+  });
+
+  const socialTemplates = {
+    twitter: `📖 Just read: "${article.title}"\n\n${article.summary}\n\n🔗 ${article.url}\n\n#webdev #technology`,
+    
+    linkedin: `I recently came across this insightful article: "${article.title}"\n\nKey takeaways:\n${article.keyPoints?.map(point => `• ${point}`).join('\n')}\n\nWhat are your thoughts on this topic?\n\n${article.url}`,
+    
+    facebook: `📚 Sharing an interesting read:\n\n"${article.title}"\n\n${article.summary}\n\nCheck it out: ${article.url}`,
+    
+    reddit: `**${article.title}**\n\n${article.summary}\n\nThought this community might find this interesting!\n\n[Read more](${article.url})`,
+    
+    discord: `📖 **${article.title}**\n${article.summary}\n\n${article.url}`
+  };
+
+  return (
+    <div className="social-generator">
+      <h3>Social Media Content Generator</h3>
+      
+      <div className="article-preview">
+        <h4>{article.title}</h4>
+        <p>{article.summary}</p>
+      </div>
+
+      <div className="social-platforms">
+        {Object.entries(socialTemplates).map(([platform, template]) => (
+          <div key={platform} className="platform-card">
+            <div className="platform-header">
+              <h4>{platform.charAt(0).toUpperCase() + platform.slice(1)}</h4>
+              <button
+                onClick={() => copy(template)}
+                className={copiedValue === template ? 'copied' : ''}
+              >
+                {copiedValue === template ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="template-preview">
+              <pre>{template}</pre>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {copied && (
+        <div className="global-success">
+          ✅ Content copied! Ready to paste on social media.
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Debugging Information Collector
+
+```tsx
+function DebugInfoCollector() {
+  const { copy, copied, loading, error } = useCopyToClipboard();
+
+  const collectDebugInfo = () => {
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      screen: {
+        width: screen.width,
+        height: screen.height,
+        colorDepth: screen.colorDepth
+      },
+      connection: (navigator as any).connection ? {
+        effectiveType: (navigator as any).connection.effectiveType,
+        downlink: (navigator as any).connection.downlink
+      } : 'Unknown',
+      localStorage: Object.keys(localStorage).length,
+      sessionStorage: Object.keys(sessionStorage).length,
+      cookies: document.cookie ? 'Enabled' : 'Disabled'
+    };
+
+    const formatted = `=== DEBUG INFORMATION ===
+Timestamp: ${debugInfo.timestamp}
+URL: ${debugInfo.url}
+User Agent: ${debugInfo.userAgent}
+
+Viewport: ${debugInfo.viewport.width}x${debugInfo.viewport.height}
+Screen: ${debugInfo.screen.width}x${debugInfo.screen.height} (${debugInfo.screen.colorDepth}-bit)
+
+Connection: ${typeof debugInfo.connection === 'object' ? 
+  `${debugInfo.connection.effectiveType} (${debugInfo.connection.downlink} Mbps)` : 
+  debugInfo.connection}
+
+Storage:
+- localStorage items: ${debugInfo.localStorage}
+- sessionStorage items: ${debugInfo.sessionStorage}
+- Cookies: ${debugInfo.cookies}
+
+=== END DEBUG INFO ===`;
+
+    copy(formatted);
+  };
+
+  return (
+    <div className="debug-collector">
+      <h3>Debug Information Collector</h3>
+      <p>Collect system information for debugging purposes</p>
+      
+      <button
+        onClick={collectDebugInfo}
+        disabled={loading}
+        className="collect-btn"
+      >
+        {loading ? 'Collecting...' : copied ? '✓ Debug Info Copied' : '🔍 Collect Debug Info'}
+      </button>
+
+      {copied && (
+        <div className="success-instructions">
+          <p>✅ Debug information copied to clipboard!</p>
+          <p>You can now paste this information when reporting issues.</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-message">
+          ❌ Failed to collect debug info: {error}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Browser Compatibility
+
+The hook automatically handles browser compatibility:
+
+- **Modern browsers**: Uses the Clipboard API for secure, modern copying
+- **Legacy browsers**: Falls back to `document.execCommand('copy')`
+- **HTTPS requirement**: Clipboard API requires HTTPS in production
+- **Permission handling**: Automatically requests clipboard permissions when needed
+
+## Error Handling
+
+Common error scenarios and how the hook handles them:
+
+```tsx
+function ErrorHandlingExample() {
+  const { copy, error, reset } = useCopyToClipboard();
+
+  const handleCopy = async (text: string) => {
+    const success = await copy(text);
+    
+    if (!success && error) {
+      // Handle specific error types
+      if (error.includes('permission')) {
+        alert('Please grant clipboard permission');
+      } else if (error.includes('https')) {
+        alert('Clipboard access requires HTTPS');
+      } else {
+        alert('Copy failed: ' + error);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleCopy('Hello World')}>
+        Copy Text
+      </button>
+      {error && (
+        <div className="error">
+          {error}
+          <button onClick={reset}>Dismiss</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+The hook provides comprehensive TypeScript support:
+
+```tsx
+const {
+  copiedValue,  // string | null
+  copied,       // boolean
+  error,        // string | null
+  loading,      // boolean
+  copy,         // (text: string) => Promise<boolean>
+  reset         // () => void
+}: UseCopyToClipboardReturn = useCopyToClipboard({
+  successDuration: 2000,
+  resetAfterDelay: true,
+  successMessage: 'Copied!'
+});
+```
+
+## Performance Tips
+
+1. **Debounce rapid clicks**: Prevent multiple copy operations
+2. **Use loading state**: Disable buttons during copy operations
+3. **Reset state**: Clear success/error states when appropriate
+4. **Handle permissions**: Check clipboard permissions beforehand
+5. **Provide feedback**: Always show copy status to users
+
+## Common Use Cases
+
+- 📋 **Code Snippets**: Copy code blocks in documentation
+- 🔗 **URL Sharing**: Share links and references
+- 📱 **Contact Info**: Copy phone numbers, emails, addresses
+- 💳 **Credentials**: Copy API keys, tokens (with security considerations)
+- 📊 **Data Export**: Copy formatted data (JSON, CSV, etc.)
+- 🎯 **Social Sharing**: Generate and copy social media content
+- 🐛 **Debug Info**: Collect system information for support
+- 📝 **Form Data**: Export form contents in various formats
+
+## Security Considerations
+
+1. **Sensitive Data**: Be cautious when copying passwords or API keys
+2. **HTTPS Only**: Modern clipboard API requires secure contexts
+3. **User Consent**: Always provide clear feedback about what's being copied
+4. **Sanitize Input**: Clean user input before copying
+5. **Audit Logs**: Consider logging copy operations for sensitive data
+
+## Best Practices
+
+1. **Provide Clear Feedback**: Always show copy status and success messages
+2. **Handle Errors Gracefully**: Provide fallback options when copy fails
+3. **Use Appropriate Timeouts**: Balance user experience with state management
+4. **Implement Keyboard Shortcuts**: Support Ctrl+C for accessibility
+5. **Test Across Browsers**: Ensure compatibility with target browsers
+6. **Consider Mobile**: Test touch interactions and mobile browsers
+
+---
+
+Perfect for any application that needs reliable clipboard functionality!

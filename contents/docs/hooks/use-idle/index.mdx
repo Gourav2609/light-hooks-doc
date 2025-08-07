@@ -1,0 +1,401 @@
+---
+title: useIdle
+description: User inactivity detection with configurable timeout and cross-tab synchronization. Perfect for auto-logout, auto-pause, and productivity features.
+---
+
+The `useIdle` hook detects user inactivity and provides idle state management with configurable timeout periods. It's perfect for implementing auto-logout functionality, pausing videos when users are away, or creating productivity timers.
+
+## Basic Usage
+
+```tsx
+import { useIdle } from 'light-hooks';
+
+function AutoLogoutComponent() {
+  const { isIdle, timeRemaining, reset } = useIdle({
+    timeout: 300000 // 5 minutes
+  });
+
+  useEffect(() => {
+    if (isIdle) {
+      // Auto logout user when idle
+      logout();
+    }
+  }, [isIdle]);
+
+  // Show warning when 1 minute remaining
+  const showWarning = timeRemaining < 60000 && timeRemaining > 0;
+
+  return (
+    <div>
+      {showWarning && (
+        <div className="warning-banner">
+          <p>Session expires in {Math.ceil(timeRemaining / 1000)} seconds</p>
+          <button onClick={reset}>Stay logged in</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options` | `UseIdleOptions` | Configuration options for idle detection |
+
+### Options
+
+```tsx
+interface UseIdleOptions {
+  /**
+   * The time in milliseconds before the user is considered idle
+   * @default 60000 (1 minute)
+   */
+  timeout?: number;
+  /**
+   * Events to listen for to reset the idle timer
+   * @default ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+   */
+  events?: string[];
+  /**
+   * Whether to start the idle detection immediately
+   * @default true
+   */
+  initialState?: boolean;
+  /**
+   * Whether to track idle state across browser tabs/windows
+   * @default false
+   */
+  crossTab?: boolean;
+}
+```
+
+### Return Value
+
+```tsx
+interface UseIdleReturn {
+  isIdle: boolean;                    // Whether the user is currently idle
+  timeRemaining: number;              // Time remaining until idle (ms)
+  timeSinceLastActivity: number;      // Time since last activity (ms)
+  reset: () => void;                  // Manually reset the idle timer
+  setIdle: (idle: boolean) => void;   // Manually set idle state
+  start: () => void;                  // Start idle detection
+  stop: () => void;                   // Stop idle detection
+}
+```
+
+## Examples
+
+### Video Player Auto-Pause
+
+```tsx
+function VideoPlayer({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement> }) {
+  const { isIdle, reset } = useIdle({
+    timeout: 10000, // 10 seconds
+    events: ['mousedown', 'mousemove', 'keypress', 'click', 'touchstart']
+  });
+
+  useEffect(() => {
+    if (isIdle && videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+      console.log('Video paused due to user inactivity');
+    }
+  }, [isIdle, videoRef]);
+
+  const handleVideoClick = () => {
+    reset(); // Reset idle timer when user interacts with video
+    if (videoRef.current?.paused) {
+      videoRef.current.play();
+    }
+  };
+
+  return (
+    <div>
+      <video
+        ref={videoRef}
+        onClick={handleVideoClick}
+        style={{ width: '100%', maxWidth: '800px' }}
+      />
+      {isIdle && (
+        <div className="video-overlay">
+          <p>Video paused due to inactivity</p>
+          <button onClick={handleVideoClick}>Resume</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Auto-Save with Idle Detection
+
+```tsx
+function DocumentEditor() {
+  const [content, setContent] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const { isIdle, timeSinceLastActivity, reset } = useIdle({
+    timeout: 30000, // 30 seconds
+    events: ['keypress', 'input', 'change']
+  });
+
+  // Auto-save when user becomes idle and has unsaved changes
+  useEffect(() => {
+    if (isIdle && hasUnsavedChanges) {
+      saveDocument(content);
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
+      console.log('Document auto-saved due to inactivity');
+    }
+  }, [isIdle, hasUnsavedChanges, content]);
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    setHasUnsavedChanges(true);
+    reset(); // Reset idle timer on content change
+  };
+
+  return (
+    <div>
+      <textarea
+        value={content}
+        onChange={(e) => handleContentChange(e.target.value)}
+        placeholder="Start typing your document..."
+        style={{ width: '100%', height: '400px' }}
+      />
+      <div className="status-bar">
+        <p>Time since last activity: {Math.floor(timeSinceLastActivity / 1000)}s</p>
+        {hasUnsavedChanges && (
+          <p>Auto-save in: {Math.ceil((30000 - timeSinceLastActivity) / 1000)}s</p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Cross-Tab Idle Detection
+
+```tsx
+function CrossTabIdleComponent() {
+  const { isIdle, timeRemaining, reset } = useIdle({
+    timeout: 120000, // 2 minutes
+    crossTab: true // Sync across browser tabs
+  });
+
+  const [sessionData, setSessionData] = useState(null);
+
+  useEffect(() => {
+    if (isIdle) {
+      // Clear sensitive data when idle across all tabs
+      setSessionData(null);
+      clearSensitiveData();
+      console.log('Session cleared due to cross-tab inactivity');
+    }
+  }, [isIdle]);
+
+  return (
+    <div>
+      <h3>Cross-Tab Idle Detection</h3>
+      <p>Status: {isIdle ? 'Idle (across all tabs)' : 'Active'}</p>
+      <p>Time remaining: {Math.ceil(timeRemaining / 1000)}s</p>
+      
+      <div>
+        <p>Open multiple tabs to test cross-tab synchronization.</p>
+        <button onClick={reset}>Reset Activity Timer</button>
+      </div>
+
+      {sessionData ? (
+        <div>
+          <h4>Sensitive Data</h4>
+          <p>This data is cleared when idle is detected.</p>
+        </div>
+      ) : (
+        <div>
+          <p>Sensitive data cleared due to inactivity.</p>
+          <button onClick={() => setSessionData({ user: 'John Doe' })}>
+            Reload Session Data
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Custom Events Idle Detection
+
+```tsx
+function CustomEventsIdleComponent() {
+  const { isIdle, start, stop, reset, timeSinceLastActivity } = useIdle({
+    timeout: 15000, // 15 seconds
+    events: ['click', 'scroll'], // Only track clicks and scrolls
+    initialState: false // Start inactive
+  });
+
+  const [isDetectionActive, setIsDetectionActive] = useState(false);
+
+  const startDetection = () => {
+    start();
+    setIsDetectionActive(true);
+  };
+
+  const stopDetection = () => {
+    stop();
+    setIsDetectionActive(false);
+  };
+
+  return (
+    <div style={{ height: '200vh', padding: '20px' }}>
+      <div style={{ position: 'fixed', top: '10px', background: 'white', padding: '10px' }}>
+        <h3>Custom Idle Detection</h3>
+        <p>Tracking only clicks and scrolls</p>
+        
+        <div>
+          <button onClick={startDetection} disabled={isDetectionActive}>
+            Start Detection
+          </button>
+          <button onClick={stopDetection} disabled={!isDetectionActive}>
+            Stop Detection
+          </button>
+          <button onClick={reset}>Reset Timer</button>
+        </div>
+
+        <div>
+          <p>Detection: {isDetectionActive ? 'Active' : 'Inactive'}</p>
+          <p>Status: {isIdle ? 'Idle' : 'Active'}</p>
+          <p>Time since last activity: {Math.floor(timeSinceLastActivity / 1000)}s</p>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '200px' }}>
+        <h2>Scroll down or click to test idle detection</h2>
+        {Array.from({ length: 20 }, (_, i) => (
+          <p key={i}>Line {i + 1}: Try scrolling or clicking to reset the timer.</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Productivity Timer
+
+```tsx
+function ProductivityTimer() {
+  const [workTime, setWorkTime] = useState(25 * 60 * 1000); // 25 minutes
+  const [isWorkSession, setIsWorkSession] = useState(true);
+  const [sessionCount, setSessionCount] = useState(0);
+
+  const { isIdle, timeRemaining, reset, setIdle } = useIdle({
+    timeout: workTime,
+    events: ['keypress', 'mousedown', 'mousemove']
+  });
+
+  useEffect(() => {
+    if (isIdle && isWorkSession) {
+      // Work session ended, suggest a break
+      setIsWorkSession(false);
+      setSessionCount(prev => prev + 1);
+      setWorkTime(5 * 60 * 1000); // 5 minute break
+      setIdle(false);
+      reset();
+    } else if (isIdle && !isWorkSession) {
+      // Break ended, start new work session
+      setIsWorkSession(true);
+      setWorkTime(25 * 60 * 1000);
+      setIdle(false);
+      reset();
+    }
+  }, [isIdle, isWorkSession, reset, setIdle]);
+
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div style={{ textAlign: 'center', padding: '20px' }}>
+      <h2>Productivity Timer</h2>
+      
+      <div style={{ fontSize: '3em', margin: '20px 0' }}>
+        {formatTime(timeRemaining)}
+      </div>
+
+      <div>
+        <h3>{isWorkSession ? '🔥 Work Session' : '☕ Break Time'}</h3>
+        <p>Session #{sessionCount + 1}</p>
+        <p>
+          {isWorkSession 
+            ? 'Stay focused! Timer resets when you become idle.' 
+            : 'Take a break! Timer resets when you become idle.'}
+        </p>
+      </div>
+
+      <button onClick={reset}>Reset Current Session</button>
+    </div>
+  );
+}
+```
+
+## Event Listeners
+
+Default events that reset the idle timer:
+
+- `mousedown` - Mouse button press
+- `mousemove` - Mouse movement  
+- `keypress` - Keyboard key press
+- `scroll` - Page scrolling
+- `touchstart` - Touch interaction (mobile)
+- `click` - Mouse clicks
+
+You can customize these events:
+
+```tsx
+const { isIdle } = useIdle({
+  events: ['click', 'keypress'], // Only clicks and keypresses
+  timeout: 60000
+});
+```
+
+## TypeScript Support
+
+The hook is fully typed with comprehensive TypeScript interfaces:
+
+```tsx
+const {
+  isIdle,
+  timeRemaining,
+  timeSinceLastActivity,
+  reset
+}: UseIdleReturn = useIdle({
+  timeout: 60000,
+  events: ['click', 'keypress'],
+  crossTab: true
+});
+```
+
+## Common Use Cases
+
+- 🔐 **Auto-Logout**: Security feature for applications with sensitive data
+- 📺 **Media Players**: Pause videos/audio when user is inactive
+- 💾 **Auto-Save**: Save user work when they step away
+- ⚡ **Power Management**: Reduce processing when user is away
+- 📊 **Analytics**: Track user engagement and activity patterns
+- 🎮 **Gaming**: Pause games during inactivity
+- ⏰ **Productivity Tools**: Break reminders and focus timers
+
+## Performance Tips
+
+1. **Choose appropriate timeouts**: Balance security with user experience
+2. **Provide warnings**: Warn users before auto-logout
+3. **Test across devices**: Different devices may have different event behaviors
+4. **Use cross-tab wisely**: Only when necessary for security
+5. **Cleanup automatically**: Hook handles cleanup on unmount

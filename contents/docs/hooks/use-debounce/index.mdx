@@ -1,0 +1,244 @@
+---
+title: useDebounce
+description: Delay value updates until activity stops. Essential for search inputs and API calls with configurable delay and advanced options.
+---
+
+The `useDebounce` hook delays value updates until activity stops, making it perfect for search inputs, form validation, and API calls. It helps prevent excessive function calls by waiting for a pause in user activity.
+
+## Basic Usage
+
+```tsx
+import { useDebounce } from 'light-hooks';
+
+function SearchComponent() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, { delay: 300 });
+
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      // Make API call with debounced search term
+      fetchSearchResults(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm]);
+
+  return (
+    <input
+      type="text"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+## API Reference
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `T` | The value to debounce |
+| `options` | `UseDebounceOptions` | Configuration options for debouncing behavior |
+
+### Options
+
+```tsx
+interface UseDebounceOptions {
+  /**
+   * The delay in milliseconds before the debounced value updates
+   * @default 500
+   */
+  delay?: number;
+  /**
+   * Whether to update the debounced value immediately on the first call
+   * @default false
+   */
+  leading?: boolean;
+  /**
+   * Maximum time to wait before forcing an update (in milliseconds)
+   * @default undefined
+   */
+  maxWait?: number;
+}
+```
+
+### Return Value
+
+| Type | Description |
+|------|-------------|
+| `T` | The debounced value |
+
+## Examples
+
+### Real-time Form Validation
+
+```tsx
+function FormWithValidation() {
+  const [email, setEmail] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
+  const debouncedEmail = useDebounce(email, { delay: 500 });
+
+  useEffect(() => {
+    if (debouncedEmail) {
+      // Validate email after user stops typing
+      validateEmail(debouncedEmail)
+        .then(result => setErrors(result.errors))
+        .catch(err => setErrors([err.message]));
+    }
+  }, [debouncedEmail]);
+
+  return (
+    <div>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter email"
+      />
+      {errors.length > 0 && (
+        <div className="error">
+          {errors.map(error => <p key={error}>{error}</p>)}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Auto-save Document
+
+```tsx
+function DocumentEditor() {
+  const [content, setContent] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const debouncedContent = useDebounce(content, { delay: 2000 });
+
+  useEffect(() => {
+    if (debouncedContent && content !== '') {
+      saveDocument(debouncedContent);
+      setLastSaved(new Date());
+    }
+  }, [debouncedContent]);
+
+  return (
+    <div>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Start typing your document..."
+      />
+      {lastSaved && (
+        <p>Last saved: {lastSaved.toLocaleTimeString()}</p>
+      )}
+    </div>
+  );
+}
+```
+
+## Advanced Examples
+
+### Leading Edge Execution
+
+```tsx
+function ComponentWithLeading() {
+  const [value, setValue] = useState('');
+  const debouncedValue = useDebounce(value, {
+    delay: 300,
+    leading: true // Execute immediately on first call
+  });
+
+  // First change executes immediately, subsequent changes are debounced
+  return (
+    <input
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      placeholder="Immediate first execution"
+    />
+  );
+}
+```
+
+### Maximum Wait Time
+
+```tsx
+function ComponentWithMaxWait() {
+  const [value, setValue] = useState('');
+  const debouncedValue = useDebounce(value, {
+    delay: 300,
+    maxWait: 1000 // Force update after 1 second max
+  });
+
+  // Ensures value eventually updates even with continuous changes
+  return (
+    <input
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      placeholder="Max wait 1 second"
+    />
+  );
+}
+```
+
+### Search with Loading State
+
+```tsx
+function AdvancedSearch() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedQuery = useDebounce(query, { delay: 400 });
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      setIsLoading(true);
+      searchAPI(debouncedQuery)
+        .then(setResults)
+        .finally(() => setIsLoading(false));
+    } else {
+      setResults([]);
+    }
+  }, [debouncedQuery]);
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search..."
+      />
+      {isLoading && <div>Searching...</div>}
+      <div>
+        {results.map(result => (
+          <div key={result.id}>{result.title}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+The hook is fully typed and supports generic types:
+
+```tsx
+const debouncedString = useDebounce<string>('initial', { delay: 300 });
+const debouncedNumber = useDebounce<number>(0, { delay: 500 });
+const debouncedObject = useDebounce<User>(user, { delay: 1000 });
+```
+
+## Common Use Cases
+
+- 🔍 **Search Inputs**: Delay API calls until user stops typing
+- ✅ **Form Validation**: Validate fields after user pauses input
+- 💾 **Auto-save**: Save drafts after user stops editing
+- 📐 **Resize Handlers**: Delay expensive calculations during window resize
+- 🚦 **API Rate Limiting**: Prevent excessive API calls
+
+## Performance Tips
+
+1. **Choose appropriate delays**: Search (300-500ms), Validation (500-1000ms), Auto-save (1000-2000ms)
+2. **Use maxWait for continuous updates**: Prevents indefinite delays
+3. **Consider leading edge**: For immediate feedback with debounced follow-up
+4. **Memoize expensive operations**: Combine with useMemo for better performance
